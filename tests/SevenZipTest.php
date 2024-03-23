@@ -12,23 +12,14 @@ class SevenZipTest extends TestCase
 
   public static function compressAndExtractDataProvider(): array
   {
-    $sevenZip             = new SevenZip();
-    $defaultCompressFlags = self::getPrivateProperty($sevenZip, 'defaultCompressFlags');
+    $defaultCompressFlags = ['zip', '7z', 'bzip2'];
 
     $testCases = [];
-    foreach ($defaultCompressFlags as $format => $flags) {
+    foreach ($defaultCompressFlags as $format) {
       $testCases[$format] = [$format];
     }
 
     return $testCases;
-  }
-
-  private static function getPrivateProperty($object, $propertyName)
-  {
-    $reflection = new \ReflectionClass(get_class($object));
-    $property   = $reflection->getProperty($propertyName);
-    $property->setAccessible(true);
-    return $property->getValue($object);
   }
 
   public static function tearDownAfterClass(): void
@@ -99,5 +90,13 @@ class SevenZipTest extends TestCase
 
     $this->sevenZip->removeCompressFlag($flag);
     $this->assertNotContains($flag, self::getPrivateProperty($this->sevenZip, 'customCompressFlags'));
+  }
+
+  private static function getPrivateProperty($object, $propertyName)
+  {
+    $reflection = new \ReflectionClass(get_class($object));
+    $property   = $reflection->getProperty($propertyName);
+    $property->setAccessible(true);
+    return $property->getValue($object);
   }
 }
