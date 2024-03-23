@@ -44,7 +44,7 @@ $sevenZip->extract($format, $archivePath, $extractPath);
 
 ## Supported Formats
 
-The package currently supports the following formats for compression and extraction:
+The package supports any format, but are aliased to the following:
 
 - 7z (default to lzma2)
 - zip
@@ -53,6 +53,10 @@ The package currently supports the following formats for compression and extract
 - lz5
 - bzip2
 - zstd
+
+> [!WARNING]
+> The format support are bound to your system, arch, etc.
+> If the wanted format are not in this list, please use addCustomCompressFlag() method.
 
 ## TODO / WIP
 
