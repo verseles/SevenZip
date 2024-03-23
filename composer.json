@@ -1,7 +1,6 @@
 {
   "name": "verseles/sevenzip",
   "description": "A package to compress and decompress files using 7zip",
-  "version": "0.0.3",
   "type": "library",
   "license": "MIT",
   "authors": [
