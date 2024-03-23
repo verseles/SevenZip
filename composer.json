@@ -1,0 +1,39 @@
+{
+  "name": "verseles/sevenzip",
+  "description": "A package to compress and decompress files using 7zip",
+  "version": "0.0.3",
+  "type": "library",
+  "license": "MIT",
+  "authors": [
+    {
+      "name": "Hélio Oliveira",
+      "email": "open@helio.me"
+    }
+  ],
+  "require": {
+    "php": ">=8.2",
+    "symfony/process": "^6.4"
+  },
+  "require-dev": {
+    "orchestra/testbench": "^8.18",
+    "phpunit/phpunit": "^10.5"
+  },
+  "autoload": {
+    "psr-4": {
+      "Verseles\\SevenZip\\": "src/"
+    }
+  },
+  "autoload-dev": {
+    "psr-4": {
+      "Verseles\\SevenZip\\Tests\\": "tests/"
+    }
+  },
+  "scripts": {
+    "test": "vendor/bin/phpunit tests/SevenZipTest.php --testdox"
+  },
+  "config": {
+    "sort-packages": true
+  },
+  "minimum-stability": "dev",
+  "prefer-stable": true
+}

@@ -1,0 +1,11 @@
+test_files/target
+test_files/extract
+vendor/
+.env*
+.idea/
+.vscode/
+node_modules/
+.phpunit.result.cache
+*.log
+.DS_Store
+ai.txt
