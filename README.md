@@ -1,6 +1,6 @@
 # SevenZip 📦
 
-A PHP package to compress and decompress files using 7zip.
+A PHP package to compress and decompress files using 7zip CLI.
 
 ![GitHub Actions Workflow Status](https://img.shields.io/github/actions/workflow/status/verseles/SevenZip/phpunit.yml?style=for-the-badge&label=PHPUnit)
 
