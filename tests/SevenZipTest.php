@@ -272,8 +272,8 @@ class SevenZipTest extends TestCase
 
     $this->sevenZip
       ->setProgressCallback($callback)
-      ->mx(9)
-      ->compress('zstd', $directory, $archive);
+      ->mx(1)
+      ->compress('7z', $directory, $archive);
 
     $this->assertNotEmpty($progressHistory);
     $this->assertEquals(100, last($progressHistory));
