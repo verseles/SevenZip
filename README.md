@@ -87,7 +87,7 @@ The package supports any format, but the following formats are aliased:
 
 > [!WARNING]
 > The format support depends on your system, architecture, etc.
-> If the desired format is not in the list, please use the `addCompressFlag()` method.
+> You can always use `format()` method to set your custom format.
 
 ## TODO / WIP
 
