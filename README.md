@@ -12,6 +12,8 @@ Install the package via Composer:
 composer require verseles/sevenzip
 ```
 
+<center>️Star the project to help us reach move devs!️</center>
+
 ## Usage
 
 ### Compression
@@ -99,7 +101,7 @@ Please ensure that your code follows the project's coding style and conventions.
 To run the tests, execute the following command:
 
 ```bash
-make
+composer test
 ```
 
 # Documentation / API
