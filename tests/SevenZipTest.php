@@ -238,7 +238,7 @@ class SevenZipTest extends TestCase
       ->target(path: $target)
       ->extract();
     $this->assertFileExists(filename: $target . '/source/Avatart.svg');
-    $this->assertFileExists(filename: $target . '/source/js_interop.dart');
+    $this->assertFileExists(filename: $target . '/source/js_interop_usage.md');
 
     unlink($archive);
   }
