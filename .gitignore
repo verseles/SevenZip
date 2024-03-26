@@ -9,3 +9,5 @@ node_modules/
 *.log
 .DS_Store
 ai.txt
+makefile
+merge.bash
