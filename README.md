@@ -83,6 +83,9 @@ $sevenZip->source('/path/to/archive.7z')
 
 - [ ] Add custom support for gz, xz, etc. by using tar flags
 - [ ] Use tar to keep original file permissions and other attributes
+- [ ] Encrypt and decrypt
+- [ ] Test files
+- [ ] Detect supported formats by the OS
 
 ## Contributing
 
