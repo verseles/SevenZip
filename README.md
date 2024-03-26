@@ -23,7 +23,7 @@ use Verseles\SevenZip\SevenZip;
 
 $sevenZip = new SevenZip();
 
-$format = '7z'; // Compression format (e.g., '7z', 'zip', 'tar')
+$format = '7z'; // Compression format (e.g., '7z', 'zip', 'tar', any here)
 $archivePath = '/path/to/archive.7z';
 $sourcePath = '/path/to/source/file/or/directory';
 
@@ -42,11 +42,15 @@ $sevenZip->format('7z')
 
 #### Compression Options
 
-- **Format**: You can set the compression format using the `format()` method. Supported formats include `7z`, `zip`, `tar`, `lz4`, `lz5`, `bzip2`,
-  and `zstd`.
+- **Format**: You can set the compression format using the `format()` method. Well known formats include `7z`, `zip`, `tar`, `lz4`, `lz5`, `bzip2`,
+  and `zstd`. Your OS needs to support the selected format.
 - **Compression Level**: You can adjust the compression level using the `faster()`, `slower()`, `mx()`, and `ultra()` methods.
 - **Custom Flags**: You can add custom compression flags using the `addFlag()` method.
 - **Progress Callback**: You can set a progress callback using the `progress()` method to monitor the compression progress.
+
+> [!WARNING]
+> The format support depends on your system, architecture, etc.
+> You can always use `format()` method to set your custom format.
 
 ### Extraction
 
@@ -72,22 +76,6 @@ $sevenZip->source('/path/to/archive.7z')
          ->target('/path/to/extract/directory')
          ->extract();
 ```
-
-## Supported Formats
-
-The package supports any format, but the following formats are aliased:
-
-- 7z (default to lzma2)
-- zip
-- tar
-- lz4
-- lz5
-- bzip2
-- zstd
-
-> [!WARNING]
-> The format support depends on your system, architecture, etc.
-> You can always use `format()` method to set your custom format.
 
 ## TODO / WIP
 
@@ -116,7 +104,7 @@ make
 
 # Documentation / API
 
-## `__construct(?string $sevenZipPath = null)`
+### `__construct(?string $sevenZipPath = null)`
 
 Constructs a new SevenZip instance. If `$sevenZipPath` is not provided, it will attempt to automatically detect the 7-Zip executable. If the
 executable is not found, an `ExecutableNotFoundException` will be thrown.
@@ -129,13 +117,13 @@ executable is not found, an `ExecutableNotFoundException` will be thrown.
 
 - `ExecutableNotFoundException`: If the 7-Zip executable is not found.
 
-## `getSevenZipPath(): ?string`
+### `getSevenZipPath(): ?string`
 
 Gets the path to the 7-Zip executable file.
 
 **Returns**: Path to the 7-Zip executable file.
 
-## `setSevenZipPath(string $sevenZipPath): SevenZip`
+### `setSevenZipPath(string $sevenZipPath): SevenZip`
 
 Sets the path to the 7-Zip executable file.
 
@@ -145,7 +133,7 @@ Sets the path to the 7-Zip executable file.
 
 **Returns**: The current instance of the SevenZip class.
 
-## `source(string $path): static`
+### `source(string $path): static`
 
 Sets the source path for the compression or extraction operation.
 
@@ -161,7 +149,7 @@ Sets the source path for the compression or extraction operation.
 $sevenZip->source('/path/to/source/file/or/directory');
 ```
 
-## `format(string $format): static`
+### `format(string $format): static`
 
 Sets the archive format.
 
@@ -177,7 +165,7 @@ Sets the archive format.
 $sevenZip->format('7z');
 ```
 
-## `compress(?string $format = null, ?string $sourcePath = null, ?string $targetPath = null): bool`
+### `compress(?string $format = null, ?string $sourcePath = null, ?string $targetPath = null): bool`
 
 Compresses a file or directory.
 
@@ -199,13 +187,13 @@ Compresses a file or directory.
 $sevenZip->compress('7z', '/path/to/source', '/path/to/archive.7z');
 ```
 
-## `getTargetPath(): string`
+### `getTargetPath(): string`
 
 Gets the target path for compression/extraction.
 
 **Returns**: The path to the target file or directory for compression or extraction.
 
-## `setTargetPath(string $path): static`
+### `setTargetPath(string $path): static`
 
 Sets the target path for compression/extraction.
 
@@ -221,13 +209,13 @@ Sets the target path for compression/extraction.
 $sevenZip->setTargetPath('/path/to/archive.7z');
 ```
 
-## `getSourcePath(): string`
+### `getSourcePath(): string`
 
 Gets the source path for compression/extraction.
 
 **Returns**: The path to the source file or directory for compression or extraction.
 
-## `setSourcePath(string $path): static`
+### `setSourcePath(string $path): static`
 
 Sets the source path for compression/extraction.
 
@@ -243,7 +231,7 @@ Sets the source path for compression/extraction.
 $sevenZip->setSourcePath('/path/to/source/file/or/directory');
 ```
 
-## `flagrize(array $flagsAndValues): array`
+### `flagrize(array $flagsAndValues): array`
 
 Formats flags and values into an array of strings suitable for passing to 7-Zip commands.
 
@@ -260,13 +248,13 @@ $formattedFlags = $sevenZip->flagrize(['m0' => 'lzma2', 'mx' => 9]);
 // Output: ['-m0=lzma2', '-mx=9']
 ```
 
-## `getFormat(): string`
+### `getFormat(): string`
 
 Gets the archive format.
 
 **Returns**: The compression format to be used.
 
-## `setFormat(string $format): static`
+### `setFormat(string $format): static`
 
 Sets the archive format.
 
@@ -282,13 +270,13 @@ Sets the archive format.
 $sevenZip->setFormat('zip');
 ```
 
-## `getCustomFlags(): array`
+### `getCustomFlags(): array`
 
 Gets the custom compression flags.
 
 **Returns**: The custom compression flags that have been added.
 
-## `setCustomFlags(array $customFlags): SevenZip`
+### `setCustomFlags(array $customFlags): SevenZip`
 
 Sets the custom compression flags.
 
@@ -304,7 +292,7 @@ Sets the custom compression flags.
 $sevenZip->setCustomFlags(['mx' => 9, 'mfb' => 64]);
 ```
 
-## `progress(callable $callback): static`
+### `progress(callable $callback): static`
 
 Sets the progress callback using a fluent interface.
 
@@ -322,13 +310,13 @@ $sevenZip->progress(function ($progress) {
 });
 ```
 
-## `faster(): static`
+### `faster(): static`
 
 Sets the compression level to faster.
 
 **Returns**: The current instance of the SevenZip class.
 
-## `mx(int $level): static`
+### `mx(int $level): static`
 
 Sets the compression level using the `-mx` flag.
 
@@ -344,7 +332,7 @@ Sets the compression level using the `-mx` flag.
 $sevenZip->mx(9); // Maximum compression
 ```
 
-## `addFlag(string $flag, $value = null): static`
+### `addFlag(string $flag, $value = null): static`
 
 Adds a compression flag.
 
@@ -361,19 +349,19 @@ Adds a compression flag.
 $sevenZip->addFlag('mfb', 64);
 ```
 
-## `slower(): static`
+### `slower(): static`
 
 Sets the compression level to slower.
 
 **Returns**: The current instance of the SevenZip class.
 
-## `ultra(): static`
+### `ultra(): static`
 
 Configures maximum compression settings based on the specified format.
 
 **Returns**: The current instance of the SevenZip class.
 
-## `mmt(int|bool|string $threads = 'on'): static`
+### `mmt(int|bool|string $threads = 'on'): static`
 
 Sets the number of CPU threads to use for compression.
 
@@ -390,7 +378,7 @@ $sevenZip->mmt('on'); // Use all available CPU threads
 $sevenZip->mmt(4); // Use 4 CPU threads
 ```
 
-## `mmem(int|string $size = 24): static`
+### `mmem(int|string $size = 24): static`
 
 Sets the memory limit for compression.
 
@@ -406,7 +394,7 @@ Sets the memory limit for compression.
 $sevenZip->mmem(32); // Set memory limit to 32 MB
 ```
 
-## `mpass(int $number = 7): static`
+### `mpass(int $number = 7): static`
 
 Sets the number of passes for compression.
 
@@ -422,7 +410,7 @@ Sets the number of passes for compression.
 $sevenZip->mpass(15); // Use 15 compression passes
 ```
 
-## `reset(): SevenZip`
+### `reset(): SevenZip`
 
 Resets the property values to their original state.
 
