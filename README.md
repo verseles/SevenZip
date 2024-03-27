@@ -79,12 +79,51 @@ $sevenZip->source('/path/to/archive.7z')
          ->extract();
 ```
 
+### Encryption
+
+You can encrypt the compressed archive using a password:
+
+```php
+$sevenZip = new SevenZip();
+$sevenZip->source('/path/to/source/file/or/directory')
+         ->target('/path/to/encrypted_archive.7z')
+         ->encrypt('your_password')
+         ->compress();
+```
+
+By default, the file names are also encrypted (not possible in zip format). If you want to disable file name encryption, you can use
+the `notEncryptNames()` method:
+
+```php
+$sevenZip->notEncryptNames();
+```
+
+For ZIP archives, you can specify the encryption method using the `setZipEncryptionMethod()` method. Available options are 'ZipCrypto' (not secure), '
+AES128', 'AES192', or 'AES256'. The default is 'AES128'.
+
+```php
+$sevenZip->setZipEncryptionMethod('AES256');
+```
+
+### Decryption
+
+To decrypt an encrypted archive during extraction:
+
+```php
+$sevenZip = new SevenZip();
+$sevenZip->source('/path/to/encrypted_archive.7z')
+         ->target('/path/to/extract/directory')
+         ->decrypt('your_password')
+         ->extract();
+```
+
 ## TODO / WIP
 
+- [x] Full support for add flags (7z switches)
 - [ ] Add custom support for gz, xz, etc. by using tar flags
 - [ ] Use tar to keep original file permissions and other attributes
-- [ ] Encrypt and decrypt
-- [ ] Test files
+- [x] Encrypt and decrypt
+- [ ] Test files using 7z test command
 - [ ] Detect supported formats by the OS
 
 ## Contributing
@@ -191,6 +230,42 @@ Compresses a file or directory.
 ```php
 $sevenZip->compress('7z', '/path/to/source', '/path/to/archive.7z');
 ```
+
+### `encrypt(string $password): self`
+
+Encrypts the data using the provided password.
+
+**Parameters**
+
+- `$password`: The password to encrypt the data.
+
+**Returns**: The current instance of the SevenZip class.
+
+### `decrypt(string $password): self`
+
+Decrypts the data using the provided password.
+
+**Parameters**
+
+- `$password`: The password to decrypt the data.
+
+**Returns**: The current instance of the SevenZip class.
+
+### `notEncryptNames(): self`
+
+Disables encryption of file names.
+
+**Returns**: The current instance of the SevenZip class.
+
+### `setZipEncryptionMethod(string $method): self`
+
+Sets the encryption method for ZIP archives.
+
+**Parameters**
+
+- `$method`: The encryption method to be used. Can be 'ZipCrypto' (not secure), 'AES128', 'AES192', or 'AES256'.
+
+**Returns**: The current instance of the SevenZip class.
 
 ### `getTargetPath(): string`
 
@@ -421,7 +496,91 @@ Resets the property values to their original state.
 
 **Returns**: The current instance of the SevenZip class.
 
-This method resets the `customFlags`, `progressCallback`, `lastProgress`, `format`, `targetPath`, and `sourcePath` properties to their default values.
+### `setPassword(?string $password): self`
+
+Sets the password for encryption or decryption.
+
+**Parameters**
+
+- `$password`: The password to be used for encryption or decryption.
+
+**Returns**: The current instance of the SevenZip class.
+
+### `getPassword(): ?string`
+
+Gets the password used for encryption or decryption.
+
+**Returns**: The password used for encryption or decryption, or null if not set.
+
+### `setEncryptNames(bool $encryptNames): self`
+
+Sets whether or not to encrypt file names.
+
+**Parameters**
+
+- `$encryptNames`: Whether or not to encrypt file names.
+
+**Returns**: The current instance of the SevenZip class.
+
+### `getEncryptNames(): ?bool`
+
+Gets whether or not file names are encrypted.
+
+**Returns**: Whether or not file names are encrypted, or null if not set.
+
+### `setZipEncryptionMethod(string $method): self`
+
+Sets the encryption method for ZIP archives.
+
+**Parameters**
+
+- `$method`: The encryption method to be used. Can be 'ZipCrypto' (not secure), 'AES128', 'AES192', or 'AES256'.
+
+**Returns**: The current instance of the SevenZip class.
+
+### `getZipEncryptionMethod(): string`
+
+Gets the encryption method used for ZIP archives.
+
+**Returns**: The encryption method used for ZIP archives.
+
+### `extract(?string $format = null, ?string $archivePath = null, ?string $extractPath = null): bool`
+
+Extracts an archive.
+
+**Parameters**
+
+- `$format` (optional): Archive format.
+- `$archivePath` (optional): Path to the archive to extract.
+- `$extractPath` (optional): Path to the directory where the archive will be extracted.
+
+**Returns**: `true` on success.
+
+**Throws**
+
+- `InvalidArgumentException`: If format, archive path, or extract path is not set.
+
+**Example**
+
+```php
+$sevenZip->extract('7z', '/path/to/archive.7z', '/path/to/extract/directory');
+```
+
+### `target(string $path): static`
+
+Sets the target path for compression or extraction using a fluent interface.
+
+**Parameters**
+
+- `$path`: The path to the target file or directory for compression or extraction.
+
+**Returns**: The current instance of the SevenZip class.
+
+**Example**
+
+```php
+$sevenZip->target('/path/to/archive.7z');
+```
 
 ## License
 

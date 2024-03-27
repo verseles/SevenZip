@@ -288,4 +288,57 @@ class SevenZipTest extends TestCase
     $this->assertEquals(['t7z', 'm0' => 'bzip2'], $defaultFlags->invoke($this->sevenZip, 'bzip2'));
     $this->assertEquals(['tmy_format'], $defaultFlags->invoke($this->sevenZip, 'my_format'));
   }
+
+  /**
+   * Test encrypting and decrypting a file.
+   *
+   * @return void
+   */
+  public function testEncryptAndDecrypt(): void
+  {
+    $password      = 'my_secret_password';
+    $sourceFile    = $this->testDir . '/source/Avatart.svg';
+    $encryptedFile = $this->testDir . '/target/test.encrypted.7z';
+    $decryptedFile = $this->testDir . '/target/';
+
+    // Compress and encrypt the file
+    $this->sevenZip->encrypt($password)
+      ->source($sourceFile)
+      ->target($encryptedFile)
+      ->compress();
+
+    $this->assertFileExists($encryptedFile);
+
+    // Decrypt and extract the file
+    $this->sevenZip->decrypt($password)
+      ->source($encryptedFile)
+      ->target($decryptedFile)
+      ->extract();
+
+    $this->assertFileExists($decryptedFile);
+    $this->assertFileEquals($sourceFile, $decryptedFile . 'Avatart.svg');
+  }
+
+  /**
+   * Test encrypting a ZIP file with a specific encryption method.
+   *
+   * @return void
+   */
+  public function testEncryptZipWithEncryptionMethod(): void
+  {
+    $password  = 'my_secret_password';
+    $format    = 'zip';
+    $directory = $this->testDir . '/source';
+    $archive   = $this->testDir . '/target/archive.' . $format;
+
+    // Compress and encrypt the ZIP file with AES256 encryption
+    $this->sevenZip->encrypt($password)
+      ->setZipEncryptionMethod('AES256')
+      ->source($directory)
+      ->target($archive)
+      ->compress($format);
+
+    $this->assertFileExists($archive);
+
+  }
 }

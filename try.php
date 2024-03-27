@@ -5,9 +5,10 @@ require_once __DIR__ . '/vendor/autoload.php';
 
 use Verseles\SevenZip\SevenZip;
 
-$archivePath    = '/Users/helio/zip-tiny.7z';
+$archivePath    = '/Users/helio/zip-big.7z';
 $extractPath    = '/Users/helio/tmp';
-$fileToCompress = '/Users/helio/zip-tiny';
+$fileToCompress = '/Users/helio/zip-big';
+$password       = 'test2';
 
 @unlink($archivePath);
 @unlink($extractPath . '/' . $fileToCompress);
@@ -21,29 +22,31 @@ $sevenZip
   ->setProgressCallback(function ($progress) {
     echo "\n" . $progress . "%\n";
   })
-  ->format('7z')
+  ->format('zstd')
+  ->encrypt($password)
   ->source($fileToCompress)
   ->target($archivePath)
   ->compress();
 echo "✅\n";
-
-echo 'Extracting archive... ';
-$sevenZip
-  ->setProgressCallback(function ($progress) {
-    echo "\n" . $progress . "%\n";
-  })
-  ->source($archivePath)
-  ->target($extractPath)
-  ->extract();
-echo "✅\n";
-
-echo "Deleting archive... ";
-unlink($archivePath);
-echo "✅\n";
-
-echo "Clearing directory... ";
-clearDirectory($extractPath);
-echo "✅\n";
+//
+//echo 'Extracting archive... ';
+//$sevenZip
+//  ->setProgressCallback(function ($progress) {
+//    echo "\n" . $progress . "%\n";
+//  })
+//  ->source($archivePath)
+//  ->target($extractPath)
+//  ->decrypt($password)
+//  ->extract();
+//echo "✅\n";
+//
+//echo "Deleting archive... ";
+//unlink($archivePath);
+//echo "✅\n";
+//
+//echo "Clearing directory... ";
+//clearDirectory($extractPath);
+//echo "✅\n";
 
 /**
  * Clears a directory by removing all files and subdirectories within it,
