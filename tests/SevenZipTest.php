@@ -276,7 +276,7 @@ class SevenZipTest extends TestCase
       ->compress('7z', $directory, $archive);
 
     $this->assertNotEmpty($progressHistory);
-    $this->assertEquals(100, last($progressHistory));
+    $this->assertEquals(100, end($progressHistory));
   }
 
   public function testGetDefaultCompressFlags(): void

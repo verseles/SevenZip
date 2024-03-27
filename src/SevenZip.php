@@ -514,8 +514,6 @@ class SevenZip
    */
   protected function runCommand(array $command): bool
   {
-    echo 'Running command: ' . implode(' ', $command) . "\n";
-
     $process = new Process($command);
     $process->run(function ($type, $buffer) {
       if ($type === Process::OUT) {
