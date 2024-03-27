@@ -125,6 +125,7 @@ $sevenZip->source('/path/to/encrypted_archive.7z')
 - [x] Encrypt and decrypt
 - [ ] Test files using 7z test command
 - [ ] Detect supported formats by the OS
+- [ ] Use docker for PHPUnit tests
 
 ## Contributing
 
