@@ -341,4 +341,18 @@ class SevenZipTest extends TestCase
     $this->assertFileExists($archive);
 
   }
+
+  /**
+   * @covers \Verseles\SevenZip\SevenZip::getSupportedFormatExtensions
+   */
+  public function testGetSupportedFormatExtensions(): void
+  {
+    $expectedFormats  = ['zip', 'tar', '7z'];
+    $supportedFormats = $this->sevenZip->getSupportedFormatExtensions();
+
+    foreach ($expectedFormats as $format) {
+      $this->assertContains($format, $supportedFormats);
+    }
+
+  }
 }

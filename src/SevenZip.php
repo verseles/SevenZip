@@ -27,16 +27,19 @@ class SevenZip
    * @var array
    */
   protected array $defaultCompressFlags = [
-    'zip'   => ['tzip'],
-    '7z'    => ['t7z', 'm0' => 'lzma2'],
-    'lzma2' => ['t7z', 'm0' => 'lzma2'],
-    'lz4'   => ['t7z', 'm0' => 'lz4'],
-    'lz5'   => ['t7z', 'm0' => 'lz5'],
-    'bz2'   => ['t7z', 'm0' => 'bzip2'],
-    'bzip2' => ['t7z', 'm0' => 'bzip2'],
-    'zstd'  => ['t7z', 'm0' => 'zstd'],
-    'zst'   => ['t7z', 'm0' => 'zstd'],
-    'tar'   => ['ttar'],
+    'zip'    => ['tzip'],
+    '7z'     => ['t7z', 'm0' => 'lzma2'],
+    'lzma2'  => ['t7z', 'm0' => 'lzma2'],
+    'lz4'    => ['t7z', 'm0' => 'lz4'],
+    'lz5'    => ['t7z', 'm0' => 'lz5'],
+    'bz2'    => ['t7z', 'm0' => 'bzip2'],
+    'bzip2'  => ['t7z', 'm0' => 'bzip2'],
+    'zstd'   => ['t7z', 'm0' => 'zstd'],
+    'zst'    => ['t7z', 'm0' => 'zstd'],
+    'brotli' => ['t7z', 'm0' => 'brotli'],
+    'br'     => ['t7z', 'm0' => 'brotli'],
+    'gzip'   => ['t7z', 'm0' => 'gzip'],
+    'tar'    => ['ttar'],
   ];
 
   /**
@@ -100,23 +103,43 @@ class SevenZip
 
   /**
    * Constructs a new SevenZip instance.
-   * If $sevenZipPath is not provided, it will attempt to automatically detect the 7-Zip executable.
+   *
+   * If $sevenZipPath is set, it will be used as the path to the 7-Zip executable.
+   * If $sevenZipPath is set to true, it will attempt to automatically detect the 7-Zip executable.
+   * If $sevenZipPath is null, it will use package provided 7-Zip executable.
    * If the executable is not found, an ExecutableNotFoundException will be thrown.
    *
-   * @param ?string $sevenZipPath Path to the 7-Zip executable file.
-   * @throws ExecutableNotFoundException If the 7-Zip executable is not found.
+   * @param string|bool|null $sevenZipPath Path to the 7-Zip executable file.
+   * @throws ExecutableNotFoundException If the 7-Zip executable is not found or not executable
    */
-  public function __construct(?string $sevenZipPath = null)
+  public function __construct(string|bool|null $sevenZipPath = null)
   {
-    if ($sevenZipPath !== null) {
+    if (is_string($sevenZipPath)) {
+      // Set the 7-Zip executable path
+
+      if (!file_exists($sevenZipPath)) {
+        throw new ExecutableNotFoundException('7-Zip binary not found: ' . $sevenZipPath);
+      }
+      if (!is_executable($sevenZipPath)) {
+        throw new ExecutableNotFoundException('7-Zip binary not executable: ' . $sevenZipPath);
+      }
+
       $this->setSevenZipPath($sevenZipPath);
     }
 
-    if ($this->getSevenZipPath() === null) {
+    if ($sevenZipPath === true) {
+      // Try to automatically detect the 7-Zip executable
       $finder       = new ExecutableFinder();
       $sevenZipPath = $finder->find('7z');
-      $this->setSevenZipPath($sevenZipPath);
+      if ($sevenZipPath !== null) {
+        $this->setSevenZipPath($sevenZipPath);
+      }
     }
+
+    if ($this->getSevenZipPath() === null) {
+      $this->setSevenZipPath($this->usePackageProvided7ZipExecutable());
+    }
+
 
     if ($this->getSevenZipPath() === null) {
       throw new ExecutableNotFoundException();
@@ -148,6 +171,44 @@ class SevenZip
   {
     $this->sevenZipPath = $sevenZipPath;
     return $this;
+  }
+
+  /**
+   * Uses the 7-Zip executable provided by the package.
+   *
+   * @return string|null The path to the 7-Zip executable, or null if the OS or architecture is not supported.
+   */
+  public function usePackageProvided7ZipExecutable(): ?string
+  {
+    ### UPDATING BINARIES ###
+    // 1. Download from https://www.7-zip.org/download.html
+    // 2. Unpack
+    // 3. Rename 7zzs (7zz for mac) its parent folder name
+    // 4. Move to bin folder here
+    // 5. Update $version
+    // 6. (Optional, rare) Update $os support
+
+    $version = 2403;
+
+    $os = match (PHP_OS_FAMILY) {
+      'Darwin' => 'mac',
+      'Linux'  => 'linux',
+      default  => null,
+    };
+
+    $arch = match (php_uname('m')) {
+      'x86_64'           => 'x64',
+      'x86'              => 'x86',
+      'arm64', 'aarch64' => 'arm64',
+      'arm'              => 'arm',
+      default            => null,
+    };
+
+    if ($os !== null && $arch !== null) {
+      return sprintf('%s/../bin/7z%d-%s%s', __DIR__, $version, $os, $os === 'mac' ? '' : '-' . $arch);
+    }
+
+    return null;
   }
 
   /**
@@ -509,13 +570,14 @@ class SevenZip
    * Run a 7z command and parse its output.
    *
    * @param array $command The 7-Zip command to be executed.
-   * @return bool True if the command was successful
+   * @return string The output from the 7-Zip command
    * @throws \RuntimeException If the command fails to execute successfully.
    */
-  protected function runCommand(array $command): bool
+  protected function runCommand(array $command, bool $secondary = false): string
   {
     $process = new Process($command);
-    $process->run(function ($type, $buffer) {
+
+    $process->run($secondary ? null : function ($type, $buffer) {
       if ($type === Process::OUT) {
         $this->parseProgress($buffer);
       }
@@ -525,11 +587,12 @@ class SevenZip
       throw new \RuntimeException($process->getErrorOutput());
     }
 
-    $this->setProgress(100);
+    if (!$secondary) {
+      $this->setProgress(100);
+      $this->reset();
+    }
 
-    $this->reset();
-
-    return true;
+    return $process->getOutput();
   }
 
   /**
@@ -620,6 +683,138 @@ class SevenZip
     $this->password         = null;
 
     return $this;
+  }
+
+  public function info(): void
+  {
+    echo $this->getInfo();
+  }
+
+  public function getInfo()
+  {
+    return $this->runCommand([$this->getSevenZipPath(), 'i'], secondary: true);
+  }
+
+  /**
+   * Get all supported format extensions from the given array.
+   *
+   * @param array|null $formats The array of format data. If not provided, the built-in info will be used.
+   * @return array The array of supported format extensions.
+   */
+  function getSupportedFormatExtensions(?array $formats = null): array
+  {
+    $formats ??= $this->getParsedInfo()['formats'];
+
+    $extensions = [];
+    foreach ($formats as $format) {
+      foreach ($format['extensions'] as $extension) {
+        $extension = preg_replace('/[^a-zA-Z0-9]/', '', $extension);
+        if ($extension !== '') {
+          $extensions[$extension] = $extension;
+        }
+      }
+    }
+
+    $extensions = array_values($extensions);
+    sort($extensions, SORT_STRING | SORT_FLAG_CASE);
+
+    return $extensions;
+  }
+
+  public function getParsedInfo(?string $output = null): array
+  {
+    return $this->parseInfoOutput($output ?? $this->getInfo());
+  }
+
+  /**
+   * Parses the given output and creates an array with version, formats, codecs, and hashers.
+   *
+   * @param string $output The output to parse
+   * @return array The parsed data
+   */
+  protected function parseInfoOutput(string $output): array
+  {
+    $data = [
+      'version' => '',
+      'formats' => [],
+      'codecs'  => [],
+      'hashers' => [],
+    ];
+
+    $lines = explode("\n", $output);
+
+    foreach ($lines as $line) {
+      $line = trim($line);
+
+      if (str_starts_with($line, '7-Zip')) {
+        $data['version'] = $line;
+      } elseif (str_starts_with($line, 'Formats:')) {
+        continue;
+      } elseif (str_starts_with($line, 'Codecs:')) {
+        break;
+      } else {
+        $regex = '/(.+?)\s{2}([A-za-z0-9]+)\s+((?:[a-z0-9().~]+\s?)+)(.*)/mu';
+        preg_match_all($regex, $line, $matches, PREG_SET_ORDER, 0);
+        if (isset($matches[0]) && count($matches[0]) >= 3) {
+          $formatParts = array_map('trim', $matches[0]);
+
+          $data['formats'][] = [
+            'flags'      => $formatParts[1],
+            'name'       => $formatParts[2],
+            'extensions' => explode(' ', $formatParts[3]),
+            'signature'  => $formatParts[4],
+          ];
+        }
+      }
+    }
+
+    $codecsStarted = false;
+    foreach ($lines as $line) {
+      $line = trim($line);
+
+      if (str_starts_with($line, 'Codecs:')) {
+        $codecsStarted = true;
+        continue;
+      }
+
+      if ($codecsStarted) {
+        if (str_starts_with($line, 'Hashers:')) {
+          break;
+        }
+
+        $codecParts = preg_split('/\s+/', $line);
+        if (count($codecParts) >= 2) {
+          $data['codecs'][] = [
+            'flags' => $codecParts[0],
+            'id'    => $codecParts[1],
+            'name'  => $codecParts[2],
+          ];
+        }
+      }
+    }
+
+    $hashersStarted = false;
+    foreach ($lines as $line) {
+      $line = trim($line);
+
+      if (str_starts_with($line, 'Hashers:')) {
+        $hashersStarted = true;
+        continue;
+      }
+
+      if ($hashersStarted) {
+        $hasherParts = preg_split('/\s+/', $line);
+        if (count($hasherParts) >= 3) {
+          $data['hashers'][] = [
+            'size' => (int)$hasherParts[0],
+            'id'   => $hasherParts[1],
+            'name' => $hasherParts[2],
+          ];
+        }
+      }
+    }
+
+    return $data;
   }
 
   /**
@@ -732,6 +927,13 @@ class SevenZip
     return $this->mx(9);
   }
 
+  /*
+   * Sets level of file analysis.
+   *
+   * @param int $level
+   * @return $this
+   */
+
   /**
    * Configures maximum compression settings based on the specified format.
    *
@@ -750,13 +952,6 @@ class SevenZip
       default       => $this,
     };
   }
-
-  /*
-   * Sets level of file analysis.
-   *
-   * @param int $level
-   * @return $this
-   */
 
   public function mmem(int|string $size = 24)
   {

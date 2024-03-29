@@ -124,7 +124,8 @@ $sevenZip->source('/path/to/encrypted_archive.7z')
 - [ ] Use tar to keep original file permissions and other attributes
 - [x] Encrypt and decrypt
 - [ ] Test files using 7z test command
-- [ ] Detect supported formats by the OS
+- [x] Detect supported formats by the OS
+- [x] Add built-in binaries for mac and linux
 - [ ] Use docker for PHPUnit tests
 
 ## Contributing
@@ -149,65 +150,25 @@ composer test
 
 # Documentation / API
 
-### `__construct(?string $sevenZipPath = null)`
+Here is the Documentation / API section of the README, updated with missing public methods and ordered alphabetically:
 
-Constructs a new SevenZip instance. If `$sevenZipPath` is not provided, it will attempt to automatically detect the 7-Zip executable. If the
-executable is not found, an `ExecutableNotFoundException` will be thrown.
+# Documentation / API
 
-**Parameters**
+### `addFlag(string $flag, $value = null): static`
 
-- `$sevenZipPath` (optional): Path to the 7-Zip executable file.
-
-**Throws**
-
-- `ExecutableNotFoundException`: If the 7-Zip executable is not found.
-
-### `getSevenZipPath(): ?string`
-
-Gets the path to the 7-Zip executable file.
-
-**Returns**: Path to the 7-Zip executable file.
-
-### `setSevenZipPath(string $sevenZipPath): SevenZip`
-
-Sets the path to the 7-Zip executable file.
+Adds a compression flag.
 
 **Parameters**
 
-- `$sevenZipPath`: Path to the 7-Zip executable file.
-
-**Returns**: The current instance of the SevenZip class.
-
-### `source(string $path): static`
-
-Sets the source path for the compression or extraction operation.
-
-**Parameters**
-
-- `$path`: The source path.
+- `$flag`: The compression flag to be added.
+- `$value` (optional): The value for the flag.
 
 **Returns**: The current instance of the SevenZip class.
 
 **Example**
 
 ```php
-$sevenZip->source('/path/to/source/file/or/directory');
-```
-
-### `format(string $format): static`
-
-Sets the archive format.
-
-**Parameters**
-
-- `$format`: The compression format to be used.
-
-**Returns**: The current instance of the SevenZip class.
-
-**Example**
-
-```php
-$sevenZip->format('7z');
+$sevenZip->addFlag('mfb', 64);
 ```
 
 ### `compress(?string $format = null, ?string $sourcePath = null, ?string $targetPath = null): bool`
@@ -232,15 +193,11 @@ Compresses a file or directory.
 $sevenZip->compress('7z', '/path/to/source', '/path/to/archive.7z');
 ```
 
-### `encrypt(string $password): self`
+### `copy(): static`
 
-Encrypts the data using the provided password.
+Configures no compression (copy only) settings based on the specified format.
 
-**Parameters**
-
-- `$password`: The password to encrypt the data.
-
-**Returns**: The current instance of the SevenZip class.
+**Returns**: The current instance for method chaining.
 
 ### `decrypt(string $password): self`
 
@@ -250,300 +207,17 @@ Decrypts the data using the provided password.
 
 - `$password`: The password to decrypt the data.
 
-**Returns**: The current instance of the SevenZip class.
+**Returns**: The current instance of this class.
 
-### `notEncryptNames(): self`
+### `encrypt(string $password): self`
 
-Disables encryption of file names.
-
-**Returns**: The current instance of the SevenZip class.
-
-### `setZipEncryptionMethod(string $method): self`
-
-Sets the encryption method for ZIP archives.
+Encrypts the data using the provided password.
 
 **Parameters**
 
-- `$method`: The encryption method to be used. Can be 'ZipCrypto' (not secure), 'AES128', 'AES192', or 'AES256'.
+- `$password`: The password to encrypt the data.
 
-**Returns**: The current instance of the SevenZip class.
-
-### `getTargetPath(): string`
-
-Gets the target path for compression/extraction.
-
-**Returns**: The path to the target file or directory for compression or extraction.
-
-### `setTargetPath(string $path): static`
-
-Sets the target path for compression/extraction.
-
-**Parameters**
-
-- `$path`: The path to the target file or directory for compression or extraction.
-
-**Returns**: The current instance of the SevenZip class.
-
-**Example**
-
-```php
-$sevenZip->setTargetPath('/path/to/archive.7z');
-```
-
-### `getSourcePath(): string`
-
-Gets the source path for compression/extraction.
-
-**Returns**: The path to the source file or directory for compression or extraction.
-
-### `setSourcePath(string $path): static`
-
-Sets the source path for compression/extraction.
-
-**Parameters**
-
-- `$path`: The path to the source file or directory for compression or extraction.
-
-**Returns**: The current instance of the SevenZip class.
-
-**Example**
-
-```php
-$sevenZip->setSourcePath('/path/to/source/file/or/directory');
-```
-
-### `flagrize(array $flagsAndValues): array`
-
-Formats flags and values into an array of strings suitable for passing to 7-Zip commands.
-
-**Parameters**
-
-- `$flagsAndValues`: An associative array of flags and their corresponding values. If the value is null, the flag will be added without an equal sign.
-
-**Returns**: An array of formatted flag strings.
-
-**Example**
-
-```php
-$formattedFlags = $sevenZip->flagrize(['m0' => 'lzma2', 'mx' => 9]);
-// Output: ['-m0=lzma2', '-mx=9']
-```
-
-### `getFormat(): string`
-
-Gets the archive format.
-
-**Returns**: The compression format to be used.
-
-### `setFormat(string $format): static`
-
-Sets the archive format.
-
-**Parameters**
-
-- `$format`: The compression format to be used.
-
-**Returns**: The current instance of the SevenZip class.
-
-**Example**
-
-```php
-$sevenZip->setFormat('zip');
-```
-
-### `getCustomFlags(): array`
-
-Gets the custom compression flags.
-
-**Returns**: The custom compression flags that have been added.
-
-### `setCustomFlags(array $customFlags): SevenZip`
-
-Sets the custom compression flags.
-
-**Parameters**
-
-- `$customFlags`: The custom compression flags to be used.
-
-**Returns**: The current instance of the SevenZip class.
-
-**Example**
-
-```php
-$sevenZip->setCustomFlags(['mx' => 9, 'mfb' => 64]);
-```
-
-### `progress(callable $callback): static`
-
-Sets the progress callback using a fluent interface.
-
-**Parameters**
-
-- `$callback`: The callback function to be called during the compression progress.
-
-**Returns**: The current instance of the SevenZip class.
-
-**Example**
-
-```php
-$sevenZip->progress(function ($progress) {
-    echo "Progress: {$progress}%\n";
-});
-```
-
-### `faster(): static`
-
-Sets the compression level to faster.
-
-**Returns**: The current instance of the SevenZip class.
-
-### `mx(int $level): static`
-
-Sets the compression level using the `-mx` flag.
-
-**Parameters**
-
-- `$level`: The compression level to be used.
-
-**Returns**: The current instance of the SevenZip class.
-
-**Example**
-
-```php
-$sevenZip->mx(9); // Maximum compression
-```
-
-### `addFlag(string $flag, $value = null): static`
-
-Adds a compression flag.
-
-**Parameters**
-
-- `$flag`: The compression flag to be added.
-- `$value` (optional): The value for the flag.
-
-**Returns**: The current instance of the SevenZip class.
-
-**Example**
-
-```php
-$sevenZip->addFlag('mfb', 64);
-```
-
-### `slower(): static`
-
-Sets the compression level to slower.
-
-**Returns**: The current instance of the SevenZip class.
-
-### `ultra(): static`
-
-Configures maximum compression settings based on the specified format.
-
-**Returns**: The current instance of the SevenZip class.
-
-### `mmt(int|bool|string $threads = 'on'): static`
-
-Sets the number of CPU threads to use for compression.
-
-**Parameters**
-
-- `$threads`: The number of CPU threads to use, or 'on' or 'off'.
-
-**Returns**: The current instance of the SevenZip class.
-
-**Example**
-
-```php
-$sevenZip->mmt('on'); // Use all available CPU threads
-$sevenZip->mmt(4); // Use 4 CPU threads
-```
-
-### `mmem(int|string $size = 24): static`
-
-Sets the memory limit for compression.
-
-**Parameters**
-
-- `$size`: The memory limit in megabytes or as a string (e.g., '32m').
-
-**Returns**: The current instance of the SevenZip class.
-
-**Example**
-
-```php
-$sevenZip->mmem(32); // Set memory limit to 32 MB
-```
-
-### `mpass(int $number = 7): static`
-
-Sets the number of passes for compression.
-
-**Parameters**
-
-- `$number`: The number of passes for compression.
-
-**Returns**: The current instance of the SevenZip class.
-
-**Example**
-
-```php
-$sevenZip->mpass(15); // Use 15 compression passes
-```
-
-### `reset(): SevenZip`
-
-Resets the property values to their original state.
-
-**Returns**: The current instance of the SevenZip class.
-
-### `setPassword(?string $password): self`
-
-Sets the password for encryption or decryption.
-
-**Parameters**
-
-- `$password`: The password to be used for encryption or decryption.
-
-**Returns**: The current instance of the SevenZip class.
-
-### `getPassword(): ?string`
-
-Gets the password used for encryption or decryption.
-
-**Returns**: The password used for encryption or decryption, or null if not set.
-
-### `setEncryptNames(bool $encryptNames): self`
-
-Sets whether or not to encrypt file names.
-
-**Parameters**
-
-- `$encryptNames`: Whether or not to encrypt file names.
-
-**Returns**: The current instance of the SevenZip class.
-
-### `getEncryptNames(): ?bool`
-
-Gets whether or not file names are encrypted.
-
-**Returns**: Whether or not file names are encrypted, or null if not set.
-
-### `setZipEncryptionMethod(string $method): self`
-
-Sets the encryption method for ZIP archives.
-
-**Parameters**
-
-- `$method`: The encryption method to be used. Can be 'ZipCrypto' (not secure), 'AES128', 'AES192', or 'AES256'.
-
-**Returns**: The current instance of the SevenZip class.
-
-### `getZipEncryptionMethod(): string`
-
-Gets the encryption method used for ZIP archives.
-
-**Returns**: The encryption method used for ZIP archives.
+**Returns**: The current instance of this class.
 
 ### `extract(?string $format = null, ?string $archivePath = null, ?string $extractPath = null): bool`
 
@@ -567,9 +241,365 @@ Extracts an archive.
 $sevenZip->extract('7z', '/path/to/archive.7z', '/path/to/extract/directory');
 ```
 
-### `target(string $path): static`
+### `faster(): static`
 
-Sets the target path for compression or extraction using a fluent interface.
+Sets the compression level to faster.
+
+**Returns**: The current instance of the SevenZip class.
+
+### `flagrize(array $flagsAndValues): array`
+
+Formats flags and values into an array of strings suitable for passing to 7-Zip commands.
+
+**Parameters**
+
+- `$flagsAndValues`: An associative array of flags and their corresponding values. If the value is null, the flag will be added without an equal sign.
+
+**Returns**: An array of formatted flag strings.
+
+**Example**
+
+```php
+$formattedFlags = $sevenZip->flagrize(['m0' => 'lzma2', 'mx' => 9]);
+// Output: ['-m0=lzma2', '-mx=9']
+```
+
+### `format(string $format): static`
+
+Sets the archive format.
+
+**Parameters**
+
+- `$format`: The compression format to be used.
+
+**Returns**: The current instance of the SevenZip class.
+
+**Example**
+
+```php
+$sevenZip->format('7z');
+```
+
+### `getCustomFlags(): array`
+
+Gets the custom compression flags.
+
+**Returns**: The custom compression flags that have been added.
+
+### `getEncryptNames(): ?bool`
+
+Gets whether or not file names are encrypted.
+
+**Returns**: Whether or not file names are encrypted, or null if not set.
+
+### `getFormat(): string`
+
+Gets the archive format.
+
+**Returns**: The compression format to be used.
+
+### `getInfo()`
+
+Returns information about 7-Zip, formats, codecs, and hashers.
+
+**Returns**: The output from the 7-Zip command.
+
+### `getLastProgress(): int`
+
+Gets the last reported progress.
+
+**Returns**: The last reported progress percentage.
+
+### `getPassword(): ?string`
+
+Gets the password used for encryption or decryption.
+
+**Returns**: The password used for encryption or decryption, or null if not set.
+
+### `getSevenZipPath(): ?string`
+
+Gets the path to the 7-Zip executable file.
+
+**Returns**: Path to the 7-Zip executable file.
+
+### `getSourcePath(): string`
+
+Gets the source path for compression/extraction.
+
+**Returns**: The path to the source file or directory for compression or extraction.
+
+### `getTargetPath(): string`
+
+Gets the target path for compression/extraction.
+
+**Returns**: The path to the target file or directory for compression or extraction.
+
+### `getZipEncryptionMethod(): string`
+
+Gets the encryption method used for ZIP archives.
+
+**Returns**: The encryption method used for ZIP archives.
+
+### `info(): void`
+
+Prints the information about 7-Zip, formats, codecs, and hashers.
+
+### `md(string $size = '32m'): self`
+
+Sets the dictionary size for the compression algorithm.
+
+**Parameters**
+
+- `$size`: The dictionary size.
+
+**Returns**: The current instance of the SevenZip class.
+
+### `mfb(int $bytes = 64): self`
+
+Sets the size of the Fast Bytes for the compression algorithm.
+
+**Parameters**
+
+- `$bytes`: The size of the Fast Bytes. The default value (when set) is 64.
+
+**Returns**: The current instance of the SevenZip class.
+
+### `mm(string $method): self`
+
+Sets the compression method for ZIP format.
+
+**Parameters**
+
+- `$method`: The compression method to be used. Can be 'Copy', 'Deflate', 'Deflate64', 'BZip2', 'LZMA', 'PPMd'.
+
+**Returns**: The current instance of the SevenZip class.
+
+### `mmem(int|string $size = 24): static`
+
+Sets the memory limit for compression.
+
+**Parameters**
+
+- `$size`: The memory limit in megabytes or as a string (e.g., '32m').
+
+**Returns**: The current instance of the SevenZip class.
+
+**Example**
+
+```php
+$sevenZip->mmem(32); // Set memory limit to 32 MB
+```
+
+### `mmt(int|bool|string $threads = 'on'): self`
+
+Sets the number of CPU threads to use for compression.
+
+**Parameters**
+
+- `$threads`: The number of CPU threads to use, or 'on' or 'off'.
+
+**Returns**: The current instance of the SevenZip class.
+
+**Example**
+
+```php
+$sevenZip->mmt('on'); // Use all available CPU threads
+$sevenZip->mmt(4); // Use 4 CPU threads
+```
+
+### `m0($method): self`
+
+Sets the compression method.
+
+**Parameters**
+
+- `$method`: The compression method to be used.
+
+**Returns**: The current instance of the SevenZip class.
+
+### `mpass(int $number = 7): self`
+
+Sets the number of passes for compression.
+
+**Parameters**
+
+- `$number`: The number of passes for compression.
+
+**Returns**: The current instance of the SevenZip class.
+
+**Example**
+
+```php
+$sevenZip->mpass(15); // Use 15 compression passes
+```
+
+### `ms(bool|string|int $on = true): self`
+
+Enables or disables solid compression mode.
+
+**Parameters**
+
+- `$on`: Whether to enable or disable solid compression mode. Can be a boolean, 'on', or 'off'.
+
+**Returns**: The current instance of the SevenZip class.
+
+### `mx(int $level): static`
+
+Sets the compression level using the `-mx` flag.
+
+**Parameters**
+
+- `$level`: The compression level to be used.
+
+**Returns**: The current instance of the SevenZip class.
+
+**Example**
+
+```php
+$sevenZip->mx(9); // Maximum compression
+```
+
+### `myx(int $level = 5): self`
+
+Sets the file analysis level.
+
+**Parameters**
+
+- `$level`: The file analysis level.
+
+**Returns**: The current instance of the SevenZip class.
+
+### `notEncryptNames(): self`
+
+Disables encryption of file names.
+
+**Returns**: The current instance of the SevenZip class.
+
+### `progress(callable $callback): self`
+
+Sets the progress callback using a fluent interface.
+
+**Parameters**
+
+- `$callback`: The callback function to be called during the compression progress.
+
+**Returns**: The current instance of the SevenZip class.
+
+**Example**
+
+```php
+$sevenZip->progress(function ($progress) {
+    echo "Progress: {$progress}%\n";
+});
+```
+
+### `removeFlag(string $flag): self`
+
+Removes a compression flag.
+
+**Parameters**
+
+- `$flag`: The compression flag to be removed.
+
+**Returns**: The current instance of the SevenZip class.
+
+### `reset(): SevenZip`
+
+Resets the property values to their original state.
+
+**Returns**: The current instance of the SevenZip class.
+
+### `setCustomFlags(array $customFlags): SevenZip`
+
+Sets the custom compression flags.
+
+**Parameters**
+
+- `$customFlags`: The custom compression flags to be used.
+
+**Returns**: The current instance of the SevenZip class.
+
+**Example**
+
+```php
+$sevenZip->setCustomFlags(['mx' => 9, 'mfb' => 64]);
+```
+
+### `setEncryptNames(bool $encryptNames): self`
+
+Sets whether or not to encrypt file names.
+
+**Parameters**
+
+- `$encryptNames`: Whether or not to encrypt file names.
+
+**Returns**: The current instance of the SevenZip class.
+
+### `setFormat(string $format): self`
+
+Sets the archive format.
+
+**Parameters**
+
+- `$format`: The compression format to be used.
+
+**Returns**: The current instance of the SevenZip class.
+
+**Example**
+
+```php
+$sevenZip->setFormat('zip');
+```
+
+### `setPassword(?string $password): self`
+
+Sets the password for encryption or decryption.
+
+**Parameters**
+
+- `$password`: The password to be used for encryption or decryption.
+
+**Returns**: The current instance of the SevenZip class.
+
+### `setProgressCallback(callable $callback): self`
+
+Sets the progress callback.
+
+**Parameters**
+
+- `$callback`: The callback function to be called during the compression progress.
+
+**Returns**: The current instance of the SevenZip class.
+
+### `setSevenZipPath(string $sevenZipPath): SevenZip`
+
+Sets the path to the 7-Zip executable file.
+
+**Parameters**
+
+- `$sevenZipPath`: Path to the 7-Zip executable file.
+
+**Returns**: The current instance of the SevenZip class.
+
+### `setSourcePath(string $path): static`
+
+Sets the source path for compression/extraction.
+
+**Parameters**
+
+- `$path`: The path to the source file or directory for compression or extraction.
+
+**Returns**: The current instance of the SevenZip class.
+
+**Example**
+
+```php
+$sevenZip->setSourcePath('/path/to/source/file/or/directory');
+```
+
+### `setTargetPath(string $path): static`
+
+Sets the target path for compression/extraction.
 
 **Parameters**
 
@@ -580,9 +610,54 @@ Sets the target path for compression or extraction using a fluent interface.
 **Example**
 
 ```php
-$sevenZip->target('/path/to/archive.7z');
+$sevenZip->setTargetPath('/path/to/archive.7z');
 ```
+
+### `setZipEncryptionMethod(string $method): self`
+
+Sets the encryption method for ZIP archives.
+
+**Parameters**
+
+- `$method`: The encryption method to be used. Can be 'ZipCrypto' (not secure), 'AES128', 'AES192', or 'AES256'.
+
+**Returns**: The current instance of the SevenZip class.
+
+### `slower(): static`
+
+Sets the compression level to slower.
+
+**Returns**: The current instance of the SevenZip class.
+
+### `source(string $path): self`
+
+Sets the source path for the compression or extraction operation.
+
+**Parameters**
+
+- `$path`: The source path.
+
+**Returns**: The current instance of the SevenZip class.
+
+### `target(?string $path): self`
+
+Sets the target path for compression/extraction using a fluent interface.
+
+**Parameters**
+
+- `$path`: The path to the target file or directory for compression or extraction.
+
+**Returns**: The current instance of the SevenZip class.
+
+### `ultra(): self`
+
+Configures maximum compression settings based on the specified format.
+
+**Returns**: The current instance for method chaining.
 
 ## License
 
 This package is open-sourced software licensed under the [MIT license](./LICENSE.md).
+
+> About 7zip binaries: Most of the source code is under the GNU LGPL license. The unRAR code is under a mixed license with GNU LGPL + unRAR
+> restrictions. [Check the license for details](https://sourceforge.net/projects/sevenzip/).
