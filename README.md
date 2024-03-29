@@ -117,6 +117,28 @@ $sevenZip->source('/path/to/encrypted_archive.7z')
          ->extract();
 ```
 
+### Checking format support
+
+You can check if a specific format or multiple formats are supported by the current 7-Zip installation using the checkSupport method:
+
+```php
+$sevenZip = new SevenZip();
+
+// Check if a single format is supported
+if ($sevenZip->checkSupport('zip')) {
+    echo "ZIP format is supported.";
+} else {
+    echo "ZIP format is not supported.";
+}
+
+// Check if multiple formats are supported
+if ($sevenZip->checkSupport(['zip', 'tar', '7z'])) {
+    echo "ZIP, TAR, and 7Z formats are supported.";
+} else {
+    echo "One or more formats are not supported.";
+}
+```
+
 ## TODO / WIP
 
 - [x] Full support for add flags (7z switches)
@@ -169,6 +191,28 @@ Adds a compression flag.
 
 ```php
 $sevenZip->addFlag('mfb', 64);
+```
+
+### `checkSupport(string|array $extensions): bool`
+
+Checks if the given extension(s) are supported by the current 7-Zip installation.
+
+**Parameters**
+
+- `$extensions`: The extension or an array of extensions to check.
+
+**Returns**: Returns true if all the given extensions are supported, false otherwise.
+
+**Example**
+
+```php
+$sevenZip = new SevenZip();
+
+// Check if a single format is supported
+$isZipSupported = $sevenZip->checkSupport('zip');
+
+// Check if multiple formats are supported
+$areFormatsSupported = $sevenZip->checkSupport(['zip', 'tar', '7z']);
 ```
 
 ### `compress(?string $format = null, ?string $sourcePath = null, ?string $targetPath = null): bool`
@@ -327,6 +371,28 @@ Gets the path to the 7-Zip executable file.
 Gets the source path for compression/extraction.
 
 **Returns**: The path to the source file or directory for compression or extraction.
+
+### `getSupportedFormatExtensions(?array $formats = null): array`
+
+Gets all supported format extensions from the given array.
+
+**Parameters**
+
+- `$formats` (optional): The array of format data. If not provided, the built-in information from 7-Zip will be used.
+  Returns: An array of supported format extensions.
+
+**Example**
+
+```php
+$sevenZip = new SevenZip();
+$supportedFormats = $sevenZip->getSupportedFormatExtensions();
+
+if (in_array('zip', $supportedFormats)) {
+echo "ZIP format is supported.";
+} else {
+echo "ZIP format is not supported.";
+}
+```
 
 ### `getTargetPath(): string`
 

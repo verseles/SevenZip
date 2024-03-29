@@ -344,15 +344,19 @@ class SevenZipTest extends TestCase
 
   /**
    * @covers \Verseles\SevenZip\SevenZip::getSupportedFormatExtensions
+   * @covers \Verseles\SevenZip\SevenZip::checkSupport
    */
-  public function testGetSupportedFormatExtensions(): void
+  public function testSupportedFormatsFunctions(): void
   {
-    $expectedFormats  = ['zip', 'tar', '7z'];
-    $supportedFormats = $this->sevenZip->getSupportedFormatExtensions();
+    $expectedFormats = ['zip', 'tar', '7z'];
 
     foreach ($expectedFormats as $format) {
-      $this->assertContains($format, $supportedFormats);
+      $this->assertTrue($this->sevenZip->checkSupport($format), 'Check using one format failure');
     }
+
+    $this->assertTrue($this->sevenZip->checkSupport($expectedFormats), 'Check using array failure');
+
+    $this->assertFalse($this->sevenZip->checkSupport('my_super_futurist_format'), 'Check using unknown format failure');
 
   }
 }

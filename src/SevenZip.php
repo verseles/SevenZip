@@ -696,12 +696,35 @@ class SevenZip
   }
 
   /**
+   * Checks if the given extension(s) are supported by the current 7-Zip installation.
+   *
+   * @param string|array $extensions The extension or an array of extensions to check.
+   * @return bool Returns true if all the given extensions are supported, false otherwise.
+   */
+  public function checkSupport(string|array $extensions): bool
+  {
+    $supportedExtensions = $this->getSupportedFormatExtensions();
+
+    if (is_string($extensions)) {
+      $extensions = [$extensions];
+    }
+
+    foreach ($extensions as $extension) {
+      if (!in_array($extension, $supportedExtensions, true)) {
+        return false;
+      }
+    }
+
+    return true;
+  }
+
+  /**
    * Get all supported format extensions from the given array.
    *
    * @param array|null $formats The array of format data. If not provided, the built-in info will be used.
    * @return array The array of supported format extensions.
    */
-  function getSupportedFormatExtensions(?array $formats = null): array
+  public function getSupportedFormatExtensions(?array $formats = null): array
   {
     $formats ??= $this->getParsedInfo()['formats'];
 
