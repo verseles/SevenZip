@@ -148,7 +148,7 @@ if ($sevenZip->checkSupport(['zip', 'tar', '7z'])) {
 - [ ] Test files using 7z test command
 - [x] Detect supported formats by the OS
 - [x] Add built-in binaries for mac and linux
-- [ ] Use docker for PHPUnit tests
+- [x] ~~Use docker for PHPUnit tests~~ not needed with built-in
 
 ## Contributing
 
