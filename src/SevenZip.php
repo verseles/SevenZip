@@ -13,7 +13,6 @@ class SevenZip
    * @var ?string
    */
   protected ?string $sevenZipPath = null;
-
   /**
    * Array of flags that are always used when running 7-Zip commands.
    * These flags are used to suppress progress output and automatically confirm operations.
@@ -99,7 +98,7 @@ class SevenZip
    *
    * @var string Can be 'ZipCrypto' (not secure) or 'AES128' or 'AES192' or 'AES256'
    */
-  protected string $zipEncryptionMethod = 'AES128';
+  protected string $zipEncryptionMethod = 'AES256';
 
   /**
    * Constructs a new SevenZip instance.
@@ -230,16 +229,23 @@ class SevenZip
   }
 
   /**
-   * Add a compression flag.
+   * Add custom flags.
    *
    * @param string $flag The compression flag to be added.
    * @param mixed $value The value for the flag (optional).
+   * @param bool $glued Whether the flag should be glued with the value instead use = between flag and value (optional).
    * @return $this The current instance of the SevenZip class.
    */
-  public function addFlag(string $flag, $value = null): self
+  public function addFlag(string $flag, string $value = null, bool $glued = false): self
   {
+    if ($glued && $value !== null) {
+      $flag  .= $value;
+      $value = null;
+    }
+
     $customFlags        = $this->getCustomFlags();
     $customFlags[$flag] = $value;
+
     return $this->setCustomFlags($customFlags);
   }
 
@@ -344,25 +350,18 @@ class SevenZip
   /**
    * Compress a file or directory.
    *
-   * @param ?string $format Archive format (optional).
-   * @param ?string $sourcePath Path to the file or directory to compress (optional).
-   * @param ?string $targetPath Path to the compressed archive (optional).
-   * @return bool True on success.
-   * @throws \InvalidArgumentException If format, target path, or source path is not set.
+   * @return string The output of the 7-Zip command.
+   * @throws \InvalidArgumentException If target path, or source path is not set.
    *
    */
-  public function compress(?string $format = null, ?string $sourcePath = null, ?string $targetPath = null): bool
+  public function compress(): string
   {
-    if ($format) $this->setFormat($format);
-    if ($sourcePath) $this->setSourcePath($sourcePath);
-    if ($targetPath) $this->setTargetPath($targetPath);
-
     if (!$this->getTargetPath()) {
-      throw new \InvalidArgumentException('Archive file path (target) must be set or passed as argument');
+      throw new \InvalidArgumentException('Archive file path (target) must be set');
     }
 
     if (!$this->getSourcePath()) {
-      throw new \InvalidArgumentException('File or directory path (source) must be set or passed as argument');
+      throw new \InvalidArgumentException('File or directory path (source) must be set');
     }
 
     if ($this->getFormat() === 'zip') {
@@ -379,6 +378,10 @@ class SevenZip
       $this->addFlag('mhe');
     }
 
+    if ($this->getPassword()) {
+      $this->addFlag('p', $this->getPassword(), glued: true);
+    }
+
     $command = [
       $this->sevenZipPath,
       'a',
@@ -388,10 +391,6 @@ class SevenZip
       $this->getTargetPath(),
       $this->getSourcePath(),
     ];
-
-    if ($this->getPassword()) {
-      $command[] = '-p' . $this->getPassword();
-    }
 
     return $this->runCommand($command);
   }
@@ -503,16 +502,17 @@ class SevenZip
   /**
    * Format flags and values into an array of strings suitable for passing to 7-Zip commands.
    *
-   * @param array $flagsAndValues An associative array of flags and their corresponding values.
+   * @param array $array An associative array of flags and their corresponding values.
    *                              If the value is null, the flag will be added without an equal sign.
    * @return array An array of formatted flag strings.
    */
-  public function flagrize(array $flagsAndValues): array
+  public function flagrize(array $array): array
   {
     $formattedFlags = [];
 
-    foreach ($flagsAndValues as $flag => $value) {
+    foreach ($array as $flag => $value) {
       if (is_numeric($flag)) {
+        // flag with no value
         $flag  = $value;
         $value = null;
       }
@@ -685,12 +685,95 @@ class SevenZip
     return $this;
   }
 
-  public function info(): void
+  /**
+   * Exclude archive filenames from the current command/archive.
+   *
+   * @param string|array $fileRefs File references to exclude. Can be a wildcard pattern or a list file.
+   * @param bool|int $recursive Recurse type. Can be: true for 'r' (enabled), false for 'r-' (disabled), 0 for 'r0' (enabled for wildcards)
+   * @return $this
+   *
+   * @throws \InvalidArgumentException If the file reference is not a string or an array.
+   *
+   * @example
+   * $sevenZip->exclude('*.7z');
+   * $sevenZip->exclude('exclude_list.txt', false);
+   * $sevenZip->exclude(['*.7z', '*.zip'], 0);
+   */
+  public function exclude(string|array $fileRefs, bool|int $recursive = true): self
   {
-    echo $this->getInfo();
+    return $this->includeOrExclude('x', $fileRefs, $recursive);
   }
 
-  public function getInfo()
+  /**
+   * Add file references flag to the current command/archive.
+   *
+   * @param string $flag The flag prefix ('x' for exclude, 'i' for include).
+   * @param string|array $fileRefs File references to add. Can be a wildcard pattern or a list file.
+   * @param bool|int $recursive Recurse type. Can be: true for 'r' (enabled), false for 'r-' (disabled), 0 for 'r0' (enabled for wildcards)
+   * @return $this
+   *
+   * @throws \InvalidArgumentException If the file reference is not a string or an array.
+   */
+  protected function includeOrExclude(string $flag, string|array $fileRefs, bool|int $recursive): self
+  {
+    if (is_string($fileRefs)) {
+      $fileRefs = [$fileRefs];
+    }
+
+    $r = match ($recursive) {
+      0     => 'r0',
+      true  => 'r',
+      false => 'r-',
+    };
+
+    foreach ($fileRefs as $fileRef) {
+      $t = file_exists($fileRef) ? '@' : '!';
+
+      $this->addFlag(
+        flag : $flag . $r . $t,
+        value: $fileRef,
+        glued: true
+      );
+    }
+
+    return $this;
+  }
+
+  /**
+   * Include archive filenames for the current command/archive.
+   *
+   * @param string|array $fileRefs File references to include. Can be a wildcard pattern or a list file.
+   * @param bool|int $recursive Recurse type. Can be: true for 'r' (enabled), false for 'r-' (disabled), 0 for 'r0' (enabled for wildcards)
+   * @return $this
+   *
+   * @throws \InvalidArgumentException If the file reference is not a string or an array.
+   *
+   * @example
+   * $sevenZip->include('*.txt');
+   * $sevenZip->include('include_list.txt', false);
+   * $sevenZip->include(['*.txt', '*.doc'], 0);
+   */
+  public function include(string|array $fileRefs, bool|int $recursive = true): self
+  {
+    return $this->includeOrExclude('i', $fileRefs, $recursive);
+  }
+
+  /**
+   * Prints information about the 7-Zip executable.
+   *
+   * @return void
+   */
+  public function info(): void
+  {
+    print $this->getInfo();
+  }
+
+  /**
+   * Retrieves information about the 7-Zip executable.
+   *
+   * @return string The output of the command execution.
+   */
+  public function getInfo(): string
   {
     return $this->runCommand([$this->getSevenZipPath(), 'i'], secondary: true);
   }
@@ -705,9 +788,7 @@ class SevenZip
   {
     $supportedExtensions = $this->getSupportedFormatExtensions();
 
-    if (is_string($extensions)) {
-      $extensions = [$extensions];
-    }
+    if (is_string($extensions)) $extensions = [$extensions];
 
     foreach ($extensions as $extension) {
       if (!in_array($extension, $supportedExtensions, true)) {
@@ -744,7 +825,7 @@ class SevenZip
     return $extensions;
   }
 
-  public function getParsedInfo(?string $output = null): array
+  protected function getParsedInfo(?string $output = null): array
   {
     return $this->parseInfoOutput($output ?? $this->getInfo());
   }
@@ -843,23 +924,25 @@ class SevenZip
   /**
    * Extract an archive.
    *
-   * @param ?string $sourcePath Path to the archive (optional).
-   * @param ?string $targetPath Path to extract the archive (optional).
-   * @return bool True on success.
+   * @return string The output of the 7-Zip command.
    * @throws \InvalidArgumentException If source path or target path is not set.
    *
    */
-  public function extract(?string $sourcePath = null, ?string $targetPath = null): bool
+  public function extract(): string
   {
-    if ($sourcePath) $this->setSourcePath($sourcePath);
-    if ($targetPath) $this->setTargetPath($targetPath);
-
     if (!$this->getSourcePath()) {
-      throw new \InvalidArgumentException('Archive path (source) must be set or passed as argument');
+      throw new \InvalidArgumentException('Archive path (source) must be set');
     }
 
     if (!$this->getTargetPath()) {
-      throw new \InvalidArgumentException('Extract path (target) must be set or passed as argument');
+      throw new \InvalidArgumentException('Extract path (target) must be set');
+    }
+
+    // Set output path
+    $this->addFlag('o', $this->getTargetPath(), glued: true);
+
+    if ($this->getPassword()) {
+      $this->addFlag('p', $this->getPassword(), glued: true);
     }
 
     $command = [
@@ -868,12 +951,7 @@ class SevenZip
       ...$this->flagrize($this->getAlwaysFlags()),
       ...$this->flagrize($this->getCustomFlags()),
       $this->getSourcePath(),
-      '-o' . $this->getTargetPath(),
     ];
-
-    if ($this->getPassword()) {
-      $command[] = '-p' . $this->getPassword();
-    }
 
     return $this->runCommand($command);
   }

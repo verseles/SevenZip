@@ -113,6 +113,7 @@ class SevenZipTest extends TestCase
     $this->sevenZip->setFormat('zip');
     $this->sevenZip->setTargetPath('/path/to/target');
     $this->sevenZip->setSourcePath('/path/to/source');
+    $this->sevenZip->encrypt('my_secret_password');
 
     $this->sevenZip->reset();
 
@@ -121,6 +122,7 @@ class SevenZipTest extends TestCase
     $this->assertEquals('7z', $this->sevenZip->getFormat());
     $this->assertEmpty($this->sevenZip->getTargetPath());
     $this->assertEmpty($this->sevenZip->getSourcePath());
+    $this->assertNull($this->sevenZip->getPassword());
   }
 
   public function testProgress(): void
@@ -176,8 +178,6 @@ class SevenZipTest extends TestCase
 
   public function testUltra7z(): void
   {
-
-
     $this->sevenZip->format('7z');
     $this->sevenZip->ultra();
     $expected = [
@@ -189,7 +189,6 @@ class SevenZipTest extends TestCase
       'md'  => '32m',
     ];
     $this->assertEquals($expected, $this->sevenZip->getCustomFlags());
-
   }
 
   public function testCopy(): void
@@ -216,6 +215,7 @@ class SevenZipTest extends TestCase
     // Compress
     $this->sevenZip
       ->format($format)
+      ->faster()
       ->source(path: $directory)
       ->target(path: $archive)
       ->compress();
@@ -257,9 +257,6 @@ class SevenZipTest extends TestCase
     $this->assertArrayNotHasKey($flag, $customFlags);
   }
 
-  /**
-   * @depends testExtract
-   */
   public function testSetProgressCallback(): void
   {
     $progressHistory = [];
@@ -271,9 +268,12 @@ class SevenZipTest extends TestCase
     $archive   = $this->testDir . '/target/archive.7z';
 
     $this->sevenZip
+      ->format('7z')
+      ->faster()
+      ->source(path: $directory)
+      ->target(path: $archive)
       ->setProgressCallback($callback)
-      ->mx(1)
-      ->compress('7z', $directory, $archive);
+      ->compress();
 
     $this->assertNotEmpty($progressHistory);
     $this->assertEquals(100, end($progressHistory));
@@ -302,7 +302,9 @@ class SevenZipTest extends TestCase
     $decryptedFile = $this->testDir . '/target/';
 
     // Compress and encrypt the file
-    $this->sevenZip->encrypt($password)
+    $this->sevenZip
+      ->faster()
+      ->encrypt($password)
       ->source($sourceFile)
       ->target($encryptedFile)
       ->compress();
@@ -332,11 +334,14 @@ class SevenZipTest extends TestCase
     $archive   = $this->testDir . '/target/archive.' . $format;
 
     // Compress and encrypt the ZIP file with AES256 encryption
-    $this->sevenZip->encrypt($password)
+    $this->sevenZip
+      ->format($format)
+      ->encrypt($password)
       ->setZipEncryptionMethod('AES256')
+      ->faster()
       ->source($directory)
       ->target($archive)
-      ->compress($format);
+      ->compress();
 
     $this->assertFileExists($archive);
 
@@ -357,6 +362,85 @@ class SevenZipTest extends TestCase
     $this->assertTrue($this->sevenZip->checkSupport($expectedFormats), 'Check using array failure');
 
     $this->assertFalse($this->sevenZip->checkSupport('my_super_futurist_format'), 'Check using unknown format failure');
+  }
 
+  /**
+   * Test excluding specific files from the archive.
+   *
+   * @return void
+   */
+  public function testExclude(): void
+  {
+    $format    = 'zip';
+    $directory = $this->testDir . '/source/*';
+    $archive   = $this->testDir . '/target/exclude_archive.' . $format;
+    $exclude   = ['Avatart.svg', 'js_interop_usage.md']; // Specify files to exclude
+
+    $extractPath = $this->testDir . '/extract';
+
+    $this->assertFileDoesNotExist($archive);
+
+    // Exclude specific files
+    $this->sevenZip
+      ->format($format)
+      ->faster()
+      ->exclude($exclude)
+      ->source($directory)
+      ->target($archive)
+      ->compress();
+
+    $this->assertFileExists($archive);
+
+    $this->sevenZip
+      ->source($archive)
+      ->target($extractPath)
+      ->extract();
+
+    $this->assertFileDoesNotExist($extractPath . '/Avatart.svg');
+    $this->assertFileDoesNotExist($extractPath . '/js_interop_usage.md');
+    $this->assertFileExists($extractPath . '/js-types.md');
+
+    // clear directory
+    self::clearDirectory($extractPath);
+  }
+
+  /**
+   * Test including specific files in the archive.
+   * @test
+   * @return void
+   */
+  public function testInclude(): void
+  {
+    $format  = '7z';
+    $dir     = $this->testDir . '/source/*';
+    $archive = $this->testDir . '/target/include_archive.' . $format;
+    $include = '*.avg';            // Specify files to include
+    $exclude = ['*.md', '*.pdf'];  // Specify files to exclude
+
+    $extractPath = $this->testDir . '/extract';
+
+    $this->assertFileDoesNotExist($archive);
+
+    // Include specific files
+    $this->sevenZip
+      ->format($format)
+      ->faster()
+      ->include($include)
+      ->exclude($exclude)
+      ->source($dir)
+      ->target($archive)
+      ->compress();
+
+    $this->assertFileExists($archive);
+
+    // Extract the archive to verify the inclusion
+    $this->sevenZip
+      ->source($archive)
+      ->target($extractPath)
+      ->extract();
+
+    $this->assertFileExists($extractPath . '/Avatart.svg');
+    $this->assertFileDoesNotExist($extractPath . '/js_interop_usage.md');
+    $this->assertFileDoesNotExist($extractPath . '/js-types.md');
   }
 }

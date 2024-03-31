@@ -21,20 +21,6 @@ composer require verseles/sevenzip
 To compress a file or directory:
 
 ```php
-use Verseles\SevenZip\SevenZip;
-
-$sevenZip = new SevenZip();
-
-$format = '7z'; // Compression format (e.g., '7z', 'zip', 'tar', any here)
-$archivePath = '/path/to/archive.7z';
-$sourcePath = '/path/to/source/file/or/directory';
-
-$sevenZip->compress($format, $archivePath, $sourcePath);
-```
-
-You can also use the fluent interface:
-
-```php
 $sevenZip = new SevenZip();
 $sevenZip->format('7z')
          ->source('/path/to/source/file/or/directory')
@@ -57,20 +43,6 @@ $sevenZip->format('7z')
 ### Extraction
 
 To extract an archive:
-
-```php
-use Verseles\SevenZip\SevenZip;
-
-$sevenZip = new SevenZip();
-
-$format = '7z'; // Archive format (e.g., '7z', 'zip', 'tar')
-$archivePath = '/path/to/archive.7z';
-$extractPath = '/path/to/extract/directory';
-
-$sevenZip->extract($format, $archivePath, $extractPath);
-```
-
-You can also use the fluent interface:
 
 ```php
 $sevenZip = new SevenZip();
@@ -99,7 +71,7 @@ $sevenZip->notEncryptNames();
 ```
 
 For ZIP archives, you can specify the encryption method using the `setZipEncryptionMethod()` method. Available options are 'ZipCrypto' (not secure), '
-AES128', 'AES192', or 'AES256'. The default is 'AES128'.
+AES128', 'AES192', or 'AES256'. The default is 'AES256'.
 
 ```php
 $sevenZip->setZipEncryptionMethod('AES256');
@@ -116,6 +88,31 @@ $sevenZip->source('/path/to/encrypted_archive.7z')
          ->decrypt('your_password')
          ->extract();
 ```
+
+## Including and Excluding Files
+
+SevenZip allows you to include or exclude specific files when compressing or extracting archives.
+
+### Including Files
+
+To include specific files in the archive, use the `include` method:
+
+```php
+$sevenZip->include('*.avg')->compress();
+```
+
+### Excluding Files
+
+To exclude specific files from the archive, use the `exclude` method:
+
+```php
+$sevenZip->exclude(['*.md', '*.pdf'])->compress();
+```
+
+Note that you can use both `include` and `exclude` methods together to fine-tune the files included in the archive.
+
+> You can pass a single file pattern, an array of file patterns or the path to a txt file with a list of patterns inside to the `exclude`
+> and `include` methods.
 
 ### Checking format support
 
@@ -144,11 +141,12 @@ if ($sevenZip->checkSupport(['zip', 'tar', '7z'])) {
 - [x] Full support for add flags (7z switches)
 - [ ] Add custom support for gz, xz, etc. by using tar flags
 - [ ] Use tar to keep original file permissions and other attributes
+- [x] Filter files by patterns
 - [x] Encrypt and decrypt
 - [ ] Test files using 7z test command
 - [x] Detect supported formats by the OS
 - [x] Add built-in binaries for mac and linux
-- [x] ~~Use docker for PHPUnit tests~~ not needed with built-in
+- [x] ~~Use docker for PHPUnit tests~~ not needed with built-in binaries
 
 ## Contributing
 
@@ -215,26 +213,20 @@ $isZipSupported = $sevenZip->checkSupport('zip');
 $areFormatsSupported = $sevenZip->checkSupport(['zip', 'tar', '7z']);
 ```
 
-### `compress(?string $format = null, ?string $sourcePath = null, ?string $targetPath = null): bool`
+### `compress(): string`
 
 Compresses a file or directory.
 
-**Parameters**
-
-- `$format` (optional): Archive format.
-- `$sourcePath` (optional): Path to the file or directory to compress.
-- `$targetPath` (optional): Path to the compressed archive.
-
-**Returns**: `true` on success.
+**Returns**: the command output on success.
 
 **Throws**
 
-- `InvalidArgumentException`: If format, target path, or source path is not set.
+- `InvalidArgumentException`: If target path, or source path is not set.
 
 **Example**
 
 ```php
-$sevenZip->compress('7z', '/path/to/source', '/path/to/archive.7z');
+$sevenZip->compress();
 ```
 
 ### `copy(): static`
@@ -263,17 +255,11 @@ Encrypts the data using the provided password.
 
 **Returns**: The current instance of this class.
 
-### `extract(?string $format = null, ?string $archivePath = null, ?string $extractPath = null): bool`
+### `extract(): string`
 
 Extracts an archive.
 
-**Parameters**
-
-- `$format` (optional): Archive format.
-- `$archivePath` (optional): Path to the archive to extract.
-- `$extractPath` (optional): Path to the directory where the archive will be extracted.
-
-**Returns**: `true` on success.
+**Returns**: the command output on success.
 
 **Throws**
 
@@ -282,7 +268,7 @@ Extracts an archive.
 **Example**
 
 ```php
-$sevenZip->extract('7z', '/path/to/archive.7z', '/path/to/extract/directory');
+$sevenZip->extract();
 ```
 
 ### `faster(): static`
@@ -405,6 +391,38 @@ Gets the target path for compression/extraction.
 Gets the encryption method used for ZIP archives.
 
 **Returns**: The encryption method used for ZIP archives.
+
+### `exclude(string|array $patterns): self`
+
+Excludes files from the archive based on the provided patterns.
+
+**Parameters**
+
+- `$patterns`: A single file pattern, an array of file patterns, or the path to a txt file with a list of patterns.
+
+**Returns**: The current instance of the SevenZip class.
+
+**Example**
+
+```php
+$sevenZip->exclude(['*.md', '*.pdf']);
+```
+
+### `include(string|array $patterns): self`
+
+Includes only the specified files in the archive based on the provided patterns.
+
+**Parameters**
+
+- `$patterns`: A single file pattern, an array of file patterns, or the path to a txt file with a list of patterns.
+
+**Returns**: The current instance of the SevenZip class.
+
+**Example**
+
+```php
+$sevenZip->include('*.avg');
+```
 
 ### `info(): void`
 
