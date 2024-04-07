@@ -35,10 +35,14 @@ $sevenZip->format('7z')
 - **Compression Level**: You can adjust the compression level using the `faster()`, `slower()`, `mx()`, and `ultra()` methods.
 - **Custom Flags**: You can add custom compression flags using the `addFlag()` method.
 - **Progress Callback**: You can set a progress callback using the `progress()` method to monitor the compression progress.
+- **Tar Before**: You can enable option to create a tar archive before compressing using the `tarBefore()` method. This is useful for preserving file
+  permissions and attributes.
 
 > [!WARNING]
 > The format support depends on your system, architecture, etc.
 > You can always use `format()` method to set your custom format.
+
+> Any set `format()` which starts with `tar.` will automatically enable `tarBefore()`. To disable add `->forceTarBefore(false)`
 
 ### Extraction
 
@@ -50,6 +54,8 @@ $sevenZip->source('/path/to/archive.7z')
          ->target('/path/to/extract/directory')
          ->extract();
 ```
+
+> If the extracted file is a single tar archive, it will be extracted and the tar file deleted. To avoid this behavior, add `->autoUntar(false)`
 
 ### Encryption
 
@@ -139,14 +145,16 @@ if ($sevenZip->checkSupport(['zip', 'tar', '7z'])) {
 ## TODO / WIP
 
 - [x] Full support for add flags (7z switches)
-- [ ] Add custom support for gz, xz, etc. by using tar flags
-- [ ] Use tar to keep original file permissions and other attributes
+- [x] Add custom support for gz, xz, etc. by using tar flags
+- [x] Use tar to keep original file permissions and other attributes
+- [x] Auto untar on extraction
 - [x] Filter files by patterns
 - [x] Encrypt and decrypt
 - [ ] Test files using 7z test command
 - [x] Detect supported formats by the OS
 - [x] Add built-in binaries for mac and linux
 - [x] ~~Use docker for PHPUnit tests~~ not needed with built-in binaries
+- [ ] Use native zstd, brotli, and others as fallback for these formats
 
 ## Contributing
 
@@ -276,6 +284,54 @@ $sevenZip->extract();
 Sets the compression level to faster.
 
 **Returns**: The current instance of the SevenZip class.
+
+### `deleteSourceAfterExtract(bool $delete = true): self`
+
+Sets whether to delete the source archive after successful extraction.
+
+**Parameters**
+
+- `$delete`: Whether to delete the source archive after extraction. Default is `true`.
+
+**Returns**: The current instance of the SevenZip class.
+
+**Example**
+
+```php
+$sevenZip->deleteSourceAfterExtract();
+```
+
+### `fileInfo(): string`
+
+Retrieves information about the specified archive file.
+
+**Returns**: The file information output from the 7-Zip command.
+
+**Throws**
+
+- `InvalidArgumentException`: If the archive path is not set.
+
+**Example**
+
+```php
+$info = $sevenZip->fileInfo();
+```
+
+### `fileList(): string`
+
+Lists the contents of the specified archive file.
+
+**Returns**: The file list output from the 7-Zip command.
+
+**Throws**
+
+- `InvalidArgumentException`: If the archive path is not set.
+
+**Example**
+
+```php
+$list = $sevenZip->fileList();
+```
 
 ### `flagrize(array $flagsAndValues): array`
 
@@ -732,6 +788,72 @@ Sets the target path for compression/extraction using a fluent interface.
 - `$path`: The path to the target file or directory for compression or extraction.
 
 **Returns**: The current instance of the SevenZip class.
+
+### `tarBefore(bool $keepFileInfo = true): self`
+
+Enables creating a tar archive before compressing, preserving file permissions and attributes by default.
+
+**Parameters**
+
+- `$keepFileInfo` (optional): Whether to preserve file permissions and attributes when creating the tar archive. Default is `true`.
+
+**Returns**: The current instance of the SevenZip class.
+
+**Example**
+
+```php
+$sevenZip->tarBefore();
+```
+
+### `forceTarBefore(bool $force): self`
+
+Sets whether to force creating a tar archive before compressing, regardless of the format.
+
+**Parameters**
+
+- `$force`: Whether to force creating a tar archive before compressing.
+
+**Returns**: The current instance of the SevenZip class.
+
+**Example**
+
+```php
+$sevenZip->forceTarBefore(true);
+```
+
+### `setTarKeepFileInfo(bool $keepFileInfo): self`
+
+Sets whether to preserve file permissions and attributes when creating a tar archive before compressing.
+
+**Parameters**
+
+- `$keepFileInfo`: Whether to preserve file permissions and attributes.
+
+**Returns**: The current instance of the SevenZip class.
+
+**Example**
+
+```php
+$sevenZip->keepFileInfoOnTar(false);
+```
+
+### `shouldForceTarBefore(): bool`
+
+Gets whether forcing tar before compression is enabled.
+
+**Returns**: Whether forcing tar before compression is enabled.
+
+### `isTarKeepFileInfo(): bool`
+
+Gets whether preserving file permissions and attributes when creating a tar archive is enabled.
+
+**Returns**: Whether preserving file permissions and attributes is enabled.
+
+### `wasAlreadyTarred(): bool`
+
+Checks if the source has already been tarred.
+
+**Returns**: Whether the source has already been tarred.
 
 ### `ultra(): self`
 

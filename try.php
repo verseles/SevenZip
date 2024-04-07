@@ -5,40 +5,60 @@ require_once __DIR__ . '/vendor/autoload.php';
 
 use Verseles\SevenZip\SevenZip;
 
-$archivePath    = '/Users/helio/zip-big.7z';
+$format         = 'tar.7z';
+$archivePath    = "/Users/helio/zip.$format";
 $extractPath    = '/Users/helio/tmp';
-$fileToCompress = '/Users/helio/zip-big';
+$fileToCompress = '/Users/helio/zip-tiny';
 $password       = 'test2';
 
-@unlink($archivePath);
-@unlink($extractPath . '/' . $fileToCompress);
+unlink($archivePath);
+unlink($extractPath . '/' . $fileToCompress);
 
 echo "Creating instance of SevenZip... ";
 $sevenZip = new SevenZip();
 echo "✅\n";
 
 echo 'Compressing archive... ';
-$sevenZip
+$callback = function ($progress) {
+  echo "\n" . $progress . "%\n";
+};
+$output   = $sevenZip
+  ->progress($callback)
+  ->format($format)
+//  ->encrypt($password)
+  ->source($fileToCompress)
+  ->target($archivePath)
+  ->exclude('*.git/*')
+//  ->solid(true)
+//  ->setTimeout(10)
+//  ->ultra()
+  ->faster()
+//  ->copy()
+->compress();
+echo "✅\n";
+echo "Output: " . $output . "\n";
+
+//echo "Info archive... ";
+//$output = $sevenZip
+//  ->source($archivePath)
+////  ->decrypt($password)
+//  ->fileInfo();
+//
+//echo "✅\n";
+//echo "Output: \n";
+
+echo 'Extracting archive... ';
+$output = $sevenZip
   ->setProgressCallback(function ($progress) {
     echo "\n" . $progress . "%\n";
   })
-  ->format('zstd')
-  ->encrypt($password)
-  ->source($fileToCompress)
-  ->target($archivePath)
-  ->compress();
-echo "✅\n";
-//
-//echo 'Extracting archive... ';
-//$sevenZip
-//  ->setProgressCallback(function ($progress) {
-//    echo "\n" . $progress . "%\n";
-//  })
-//  ->source($archivePath)
-//  ->target($extractPath)
+//  ->autoUntar(false)
+  ->source($archivePath)
+  ->target($extractPath)
 //  ->decrypt($password)
-//  ->extract();
-//echo "✅\n";
+  ->extract();
+echo "✅\n";
+echo "Output: " . $output . "\n";
 //
 //echo "Deleting archive... ";
 //unlink($archivePath);
