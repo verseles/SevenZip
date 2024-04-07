@@ -76,6 +76,8 @@ class SevenZip
    */
   protected int $lastProgress = -1;
 
+  protected int $divideProgressBy = 1;
+
   /**
    * The compression format to be used.
    * @var ?string
@@ -535,7 +537,7 @@ class SevenZip
         $process->getErrorOutput());
     }
 
-    if (!$secondary) {
+    if (!$secondary && $this->getDivideProgressBy() === 1) {
       $this->setProgress(100);
       $this->reset();
     }
@@ -569,6 +571,8 @@ class SevenZip
     foreach ($lines as $line) {
       if (preg_match("/(\d+)%\s+\d+/", $line, $matches)) {
         $progress = intval($matches[1]);
+        $progress = floor($progress / $this->getDivideProgressBy());
+
         $this->setProgress($progress);
       }
     }
@@ -587,12 +591,23 @@ class SevenZip
   /**
    * Set the progress callback.
    *
-   * @param callable $callback The callback function to be called during the compression progress.
+   * @param ?callable $callback The callback function to be called during the compression progress.
    * @return $this The current instance of the SevenZip class.
    */
-  public function setProgressCallback(callable $callback): self
+  public function setProgressCallback(?callable $callback): self
   {
     $this->progressCallback = $callback;
+    return $this;
+  }
+
+  public function getDivideProgressBy(): int
+  {
+    return $this->divideProgressBy;
+  }
+
+  public function setDivideProgressBy(int $number = 1): SevenZip
+  {
+    $this->divideProgressBy = is_int($number) && $number > 0 ? $number : 1;
     return $this;
   }
 
@@ -620,12 +635,12 @@ class SevenZip
   /**
    * Set the last reported progress.
    *
-   * @param int $lastProgress The last reported progress percentage.
+   * @param int $value The last reported progress percentage.
    * @return SevenZip The current instance of the SevenZip class.
    */
-  protected function setLastProgress(int $lastProgress): self
+  protected function setLastProgress(int $value): self
   {
-    $this->lastProgress = $lastProgress;
+    $this->lastProgress = $value;
     return $this;
   }
 
@@ -1148,6 +1163,9 @@ class SevenZip
    */
   public function executeUntarAfter(string $tarFile, array $extractCommand): string
   {
+    $this->setProgress(20);
+    $this->setDivideProgressBy(5);
+
     $sourceTar = str_replace('//', '/', $this->getTargetPath() . '/' . $tarFile);
 
     $sz = new self();
@@ -1159,9 +1177,7 @@ class SevenZip
       ->target($this->getTargetPath());
 
 
-    if ($this->getProgressCallback() !== null) {
-      $sz->progress($this->getProgressCallback());
-    }
+    $sz->progress($this->getProgressCallback());
 
 
     // 'snoi' => store owner id in archive, extract owner id from archive (tar/Linux)
@@ -1172,7 +1188,7 @@ class SevenZip
     if ($this->shouldKeepFileInfoOnTar()) {
       $sz
         ->addFlag('snoi')
-//        ->addFlag('snon') // @FIXME on linux causes a error "Segmentation fault"
+//        ->addFlag('snon') // @FIXME on linux causes an error "Segmentation fault"
         ->addFlag('mtc', 'on')
         ->addFlag('mta', 'on')
         ->addFlag('mtm', 'on');
@@ -1218,10 +1234,10 @@ class SevenZip
   /**
    * Set the progress callback using a fluent interface.
    *
-   * @param callable $callback The callback function to be called during the compression progress.
+   * @param ?callable $callback The callback function to be called during the compression progress.
    * @return $this The current instance of the SevenZip class.
    */
-  public function progress(callable $callback): self
+  public function progress(?callable $callback): self
   {
     return $this->setProgressCallback($callback);
   }
@@ -1345,6 +1361,13 @@ class SevenZip
     return $this->encryptNames;
   }
 
+  /*
+   * Sets level of file analysis.
+   *
+   * @param int $level
+   * @return $this
+   */
+
   /**
    * Set whether to encrypt file names or not.
    *
@@ -1366,13 +1389,6 @@ class SevenZip
   {
     return $this->forceTarBefore;
   }
-
-  /*
-   * Sets level of file analysis.
-   *
-   * @param int $level
-   * @return $this
-   */
 
   /**
    * Tars the source file or directory before compressing.
@@ -1404,9 +1420,10 @@ class SevenZip
         ->target($tarPath)
         ->source($sourcePath);
 
-      if ($this->getProgressCallback() !== null) {
-        $sz->progress($this->getProgressCallback());
-      }
+      $partOfTotal = 5;
+      $sz->setDivideProgressBy($partOfTotal);
+      $this->setLastProgress(100 / $partOfTotal);
+      $sz->progress($this->getProgressCallback());
 
 
       // 'snoi' => store owner id in archive, extract owner id from archive (tar/Linux)
@@ -1426,6 +1443,7 @@ class SevenZip
       }
 
       $sz->compress();
+
       unset($sz);
 
       $this->setAlreadyTarred(true);

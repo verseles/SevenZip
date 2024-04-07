@@ -8,11 +8,11 @@ use Verseles\SevenZip\SevenZip;
 $format         = 'tar.7z';
 $archivePath    = "/Users/helio/zip.$format";
 $extractPath    = '/Users/helio/tmp';
-$fileToCompress = '/Users/helio/zip-tiny';
+$fileToCompress = '/Users/helio/zip-big';
 $password       = 'test2';
 
-unlink($archivePath);
-unlink($extractPath . '/' . $fileToCompress);
+@unlink($archivePath);
+@unlink($extractPath . '/' . $fileToCompress);
 
 echo "Creating instance of SevenZip... ";
 $sevenZip = new SevenZip();
@@ -29,12 +29,12 @@ $output   = $sevenZip
   ->source($fileToCompress)
   ->target($archivePath)
   ->exclude('*.git/*')
-//  ->solid(true)
+  ->solid(true)
 //  ->setTimeout(10)
 //  ->ultra()
-  ->faster()
+//  ->faster()
 //  ->copy()
-->compress();
+  ->compress();
 echo "✅\n";
 echo "Output: " . $output . "\n";
 
@@ -59,7 +59,7 @@ $output = $sevenZip
   ->extract();
 echo "✅\n";
 echo "Output: " . $output . "\n";
-//
+
 //echo "Deleting archive... ";
 //unlink($archivePath);
 //echo "✅\n";
