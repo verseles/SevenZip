@@ -505,7 +505,7 @@ class SevenZip
   protected function runCommand(array $command, bool $secondary = false): string
   {
 
-//    echo "\nCommand: " . implode(" ", $command) . "\n";
+    echo "\nCommand: " . implode(" ", $command) . "\n";
     $process = new Process($command);
     $process->setTimeout($this->getTimeout());
 
@@ -880,7 +880,7 @@ class SevenZip
     }
 
     if ($shouldDeleteSourceAfterExtract) {
-      unlink($sourcePath);
+      @unlink($sourcePath);
     }
 
     return $output;
@@ -1142,7 +1142,7 @@ class SevenZip
    */
   public function executeUntarAfter(string $tarFile, array $extractCommand): string
   {
-    $sourceTar = $this->getTargetPath() . '/' . $tarFile;
+    $sourceTar = str_replace('//', '/', $this->getTargetPath() . '/' . $tarFile);
 
     $sz = new self();
     $sz
@@ -1386,8 +1386,11 @@ class SevenZip
     }
 
     $sourcePath = $this->getSourcePath();
-    $tarPath    = sys_get_temp_dir() . '/' . uniqid('sevenzip_') . '/' . basename($sourcePath) . '.tar';
-
+    $targetPath = $this->getTargetPath();
+    $tarPath    = sys_get_temp_dir() . '/' . uniqid('sevenzip_') . '/' . pathinfo($targetPath, PATHINFO_FILENAME);
+    if (substr($tarPath, -4) !== '.tar') {
+      $tarPath .= '.tar';
+    }
     try {
       $sz = new self();
       $sz
@@ -1424,7 +1427,7 @@ class SevenZip
       $this->setSourcePath($tarPath)->deleteSourceAfterCompress();
     }
     catch (Exception $e) {
-      unlink($tarPath);
+      @unlink($tarPath);
       throw $e;
       // @TODO use native tar?
     }
