@@ -1172,7 +1172,7 @@ class SevenZip
     if ($this->shouldKeepFileInfoOnTar()) {
       $sz
         ->addFlag('snoi')
-        ->addFlag('snon')
+//        ->addFlag('snon') // @FIXME on linux causes a error "Segmentation fault"
         ->addFlag('mtc', 'on')
         ->addFlag('mta', 'on')
         ->addFlag('mtm', 'on');
@@ -1417,7 +1417,7 @@ class SevenZip
       if ($this->shouldKeepFileInfoOnTar()) {
         $sz
           ->addFlag("snoi")
-          ->addFlag("snon")
+//          ->addFlag("snon") // @FIXME on linux causes a error "Segmentation fault"
           ->addFlag("mtc", "on")
           ->addFlag("mta", "on")
           ->addFlag("mtm", "on");
