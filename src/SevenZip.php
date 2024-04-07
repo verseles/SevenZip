@@ -231,13 +231,19 @@ class SevenZip
     };
 
     if ($os !== null && $arch !== null) {
-      return sprintf(
+      $path = sprintf(
         "%s/../bin/7z%d-%s%s",
         __DIR__,
         $version,
         $os,
         $os === "mac" ? "" : "-" . $arch
       );
+
+      $path = realpath($path);
+
+      if (is_executable($path)) {
+        return $path;
+      }
     }
 
     return null;

@@ -502,8 +502,6 @@ class SevenZipTest extends TestCase
       ->target($tarPath)
       ->compress();
 
-
-    // Assert that the tar file exists
     $this->assertFileExists($tarPath);
   }
 
