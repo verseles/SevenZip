@@ -12,7 +12,7 @@ class SevenZipTest extends TestCase
 
   public static function compressAndExtractDataProvider(): array
   {
-    $defaultCompressFlags = ['zip', '7z', 'bzip2'];
+    $defaultCompressFlags = ['zip', '7z', 'bzip2', 'tar'];
 
     $testCases = [];
     foreach ($defaultCompressFlags as $format) $testCases[$format] = [$format];
