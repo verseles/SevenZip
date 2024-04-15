@@ -409,21 +409,23 @@ class SevenZip
    *
    * @param string|array $fileRefs File references to exclude. Can be a wildcard pattern or a list file.
    * @param bool|int $recursive Recurse type. Can be: true for 'r' (enabled), false for 'r-' (disabled), 0 for 'r0' (enabled for wildcards)
+   * @param bool $isListFile Whether the file reference is a list file
    * @return $this
    *
    * @throws \InvalidArgumentException If the file reference is not a string or an array.
    *
    * @example
    * $sevenZip->exclude('*.7z');
-   * $sevenZip->exclude('exclude_list.txt', false);
+   * $sevenZip->exclude('exclude_list.txt', false, true);
    * $sevenZip->exclude(['*.7z', '*.zip'], 0);
    */
   public function exclude(
     string|array $fileRefs,
-    bool|int     $recursive = true
+    bool|int     $recursive = true,
+    bool         $isListFile = false
   ): self
   {
-    return $this->includeOrExclude("x", $fileRefs, $recursive);
+    return $this->includeOrExclude("x", $fileRefs, $recursive, $isListFile);
   }
 
   /**
@@ -432,6 +434,7 @@ class SevenZip
    * @param string $flag The flag prefix ('x' for exclude, 'i' for include).
    * @param string|array $fileRefs File references to add. Can be a wildcard pattern or a list file.
    * @param bool|int $recursive Recurse type. Can be: true for 'r' (enabled), false for 'r-' (disabled), 0 for 'r0' (enabled for wildcards)
+   * @param bool $isListFile Whether the file reference is a list file
    * @return $this
    *
    * @throws \InvalidArgumentException If the file reference is not a string or an array.
@@ -439,7 +442,8 @@ class SevenZip
   protected function includeOrExclude(
     string       $flag,
     string|array $fileRefs,
-    bool|int     $recursive
+    bool|int     $recursive,
+    bool         $isListFile = false
   ): self
   {
     if (is_string($fileRefs)) {
@@ -453,7 +457,7 @@ class SevenZip
     };
 
     foreach ($fileRefs as $fileRef) {
-      $t = file_exists($fileRef) ? "@" : "!";
+      $t = $isListFile ? "@" : "!";
 
       $this->addFlag(flag: $flag . $r . $t, value: $fileRef, glued: true);
     }
@@ -466,21 +470,23 @@ class SevenZip
    *
    * @param string|array $fileRefs File references to include. Can be a wildcard pattern or a list file.
    * @param bool|int $recursive Recurse type. Can be: true for 'r' (enabled), false for 'r-' (disabled), 0 for 'r0' (enabled for wildcards)
+   * @param bool $isListFile Whether the file reference is a list file
    * @return $this
    *
    * @throws \InvalidArgumentException If the file reference is not a string or an array.
    *
    * @example
    * $sevenZip->include('*.txt');
-   * $sevenZip->include('include_list.txt', false);
+   * $sevenZip->include('include_list.txt', false, true);
    * $sevenZip->include(['*.txt', '*.doc'], 0);
    */
   public function include(
     string|array $fileRefs,
-    bool|int     $recursive = true
+    bool|int     $recursive = true,
+    bool         $isListFile = false
   ): self
   {
-    return $this->includeOrExclude("i", $fileRefs, $recursive);
+    return $this->includeOrExclude("i", $fileRefs, $recursive, $isListFile);
   }
 
   /**
