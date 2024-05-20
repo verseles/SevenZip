@@ -2,6 +2,9 @@
 
 namespace Verseles\SevenZip\Tests;
 
+use PHPUnit\Framework\Attributes\DataProvider;
+use PHPUnit\Framework\Attributes\Depends;
+use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
 use Verseles\SevenZip\SevenZip;
 
@@ -84,12 +87,8 @@ class SevenZipTest extends TestCase
     $this->assertEquals($expected, $result);
   }
 
-  /**
-   * @covers \Verseles\SevenZip\SevenZip::getAlwaysFlags
-   * @covers \Verseles\SevenZip\SevenZip::setAlwaysFlags
-   * @return void
-   * @throws \ReflectionException
-   */
+  #[Covers('\Verseles\SevenZip\SevenZip::getAlwaysFlags')]
+  #[Covers('\Verseles\SevenZip\SevenZip::setAlwaysFlags')]
   public function testGetAndSetAlwaysFlags(): void
   {
     $getAlwaysFlags = $this->getProtectedMethod($this->sevenZip, 'getAlwaysFlags');
@@ -112,9 +111,7 @@ class SevenZipTest extends TestCase
     return $method;
   }
 
-  /**
-   * @covers \Verseles\SevenZip\SevenZip::reset
-   */
+  #[Covers('\Verseles\SevenZip\SevenZip::reset')]
   public function testReset(): void
   {
     $this->sevenZip
@@ -156,10 +153,7 @@ class SevenZipTest extends TestCase
     $this->assertFalse($this->sevenZip->shouldDeleteSourceAfterExtract());
   }
 
-  /**
-   * @covers \Verseles\SevenZip\SevenZip::progress
-   * @return void
-   */
+  #[Covers('\Verseles\SevenZip\SevenZip::getProgressCallback')]
   public function testProgress(): void
   {
     $callback = function () { };
@@ -167,10 +161,8 @@ class SevenZipTest extends TestCase
     $this->assertEquals($callback, $this->sevenZip->getProgressCallback());
   }
 
-  /**
-   * @covers \Verseles\SevenZip\SevenZip::faster
-   * @covers \Verseles\SevenZip\SevenZip::slower
-   */
+  #[Covers('\Verseles\SevenZip\SevenZip::getCustomFlags')]
+  #[Covers('\Verseles\SevenZip\SevenZip::setCustomFlags')]
   public function testCompressionLevels(): void
   {
     $this->sevenZip->format('zstd');
@@ -188,9 +180,7 @@ class SevenZipTest extends TestCase
     $this->assertEquals(['mx' => 9, 'mmt' => 'on'], $this->sevenZip->getCustomFlags());
   }
 
-  /**
-   * @covers \Verseles\SevenZip\SevenZip::ultra
-   */
+  #[Covers('\Verseles\SevenZip\SevenZip::ultra')]
   public function testUltraZip(): void
   {
     $this->sevenZip->format('zip');
@@ -206,9 +196,7 @@ class SevenZipTest extends TestCase
     $this->assertEquals($expected, $this->sevenZip->getCustomFlags());
   }
 
-  /**
-   * @covers \Verseles\SevenZip\SevenZip::ultra
-   */
+  #[Covers('\Verseles\SevenZip\SevenZip::ultra')]
   public function testUltraZstd(): void
   {
 
@@ -221,9 +209,7 @@ class SevenZipTest extends TestCase
     $this->assertEquals($expected, $this->sevenZip->getCustomFlags());
   }
 
-  /**
-   * @covers \Verseles\SevenZip\SevenZip::ultra
-   */
+  #[Covers('\Verseles\SevenZip\SevenZip::ultra')]
   public function testUltra7z(): void
   {
     $this->sevenZip->format('7z');
@@ -239,9 +225,7 @@ class SevenZipTest extends TestCase
     $this->assertEquals($expected, $this->sevenZip->getCustomFlags());
   }
 
-  /**
-   * @covers \Verseles\SevenZip\SevenZip::copy
-   */
+  #[Covers('\Verseles\SevenZip\SevenZip::copy')]
   public function testCopy(): void
   {
     $this->sevenZip->copy();
@@ -255,10 +239,8 @@ class SevenZipTest extends TestCase
     $this->assertEquals($expected, $this->sevenZip->getCustomFlags());
   }
 
-  /**
-   * @dataProvider compressAndExtractDataProvider
-   * @covers       \Verseles\SevenZip\SevenZip::compress
-   */
+  #[Covers('\Verseles\SevenZip\SevenZip::compress')]
+  #[DataProvider('compressAndExtractDataProvider')]
   public function testCompress(string $format): void
   {
     $directory = $this->testDir . '/source';
@@ -275,11 +257,9 @@ class SevenZipTest extends TestCase
     $this->assertFileExists(filename: $archive);
   }
 
-  /**
-   * @dataProvider compressAndExtractDataProvider
-   * @covers       \Verseles\SevenZip\SevenZip::extract
-   * @depends      testCompress
-   */
+  #[Covers('\Verseles\SevenZip\SevenZip::extract')]
+  #[DataProvider('compressAndExtractDataProvider')]
+  #[Depends('testCompress')]
   public function testExtract(string $format): void
   {
     $archive = $this->testDir . '/target/archive.' . $format;
@@ -296,10 +276,8 @@ class SevenZipTest extends TestCase
     unlink($archive);
   }
 
-  /**
-   * @covers \Verseles\SevenZip\SevenZip::addFlag
-   * @covers \Verseles\SevenZip\SevenZip::removeFlag
-   */
+  #[Covers('\Verseles\SevenZip\SevenZip::getCustomFlags')]
+  #[Covers('\Verseles\SevenZip\SevenZip::setCustomFlags')]
   public function testFlagManagement(): void
   {
     $flag  = 'mx';
@@ -336,12 +314,8 @@ class SevenZipTest extends TestCase
     $this->assertEquals(100, end($progressHistory));
   }
 
-  /**
-   * Test encrypting and decrypting a file.
-   * @covers \Verseles\SevenZip\SevenZip::encrypt
-   * @covers \Verseles\SevenZip\SevenZip::decrypt
-   * @return void
-   */
+  #[Covers('\Verseles\SevenZip\SevenZip::encrypt')]
+  #[Covers('\Verseles\SevenZip\SevenZip::decrypt')]
   public function testEncryptAndDecrypt(): void
   {
     $password      = 'my_secret_password';
@@ -369,11 +343,6 @@ class SevenZipTest extends TestCase
     $this->assertFileEquals($sourceFile, $decryptedFile . 'Avatart.svg');
   }
 
-  /**
-   * Test encrypting a ZIP file with a specific encryption method.
-   *
-   * @return void
-   */
   public function testEncryptZipWithEncryptionMethod(): void
   {
     $password  = 'my_secret_password';
@@ -395,10 +364,8 @@ class SevenZipTest extends TestCase
 
   }
 
-  /**
-   * @covers \Verseles\SevenZip\SevenZip::getSupportedFormatExtensions
-   * @covers \Verseles\SevenZip\SevenZip::checkSupport
-   */
+  #[Covers('\Verseles\SevenZip\SevenZip::checkSupport')]
+  #[Covers('\Verseles\SevenZip\SevenZip::getSupportedFormatExtensions')]
   public function testSupportedFormatsFunctions(): void
   {
     $expectedFormats = ['zip', 'tar', '7z'];
@@ -452,11 +419,7 @@ class SevenZipTest extends TestCase
     self::clearDirectory($extractPath);
   }
 
-  /**
-   * Test including specific files in the archive.
-   * @test
-   * @return void
-   */
+  #[Test]
   public function testInclude(): void
   {
     $format  = '7z';
@@ -505,12 +468,9 @@ class SevenZipTest extends TestCase
     $this->assertFileExists($tarPath);
   }
 
-  /**
-   * @covers \Verseles\SevenZip\SevenZip::tarBefore
-   * @covers \Verseles\SevenZip\SevenZip::fileInfo
-   * @covers \Verseles\SevenZip\SevenZip::fileList
-   * @return void
-   */
+  #[Covers('\Verseles\SevenZip\SevenZip::tarBefore')]
+  #[Covers('\Verseles\SevenZip\SevenZip::fileInfo')]
+  #[Covers('\Verseles\SevenZip\SevenZip::fileList')]
   public function testTarBeforeExplicit(): string
   {
     $tarPath = $this->testDir . '/target/archive.tar.7z';
@@ -536,12 +496,9 @@ class SevenZipTest extends TestCase
     return $tarPath;
   }
 
-  /**
-   * @depends testTarBeforeExplicit
-   * @covers  \Verseles\SevenZip\SevenZip::autoUntar
-   * @covers  \Verseles\SevenZip\SevenZip::shouldAutoUntar
-   * @return void
-   */
+  #[Covers('\Verseles\SevenZip\SevenZip::autoUntar')]
+  #[Covers('\Verseles\SevenZip\SevenZip::shouldAutoUntar')]
+  #[Depends('testTarBeforeExplicit')]
   public function testAutoUntar($tarPath)
   {
     $this->assertFileExists($tarPath);
@@ -554,12 +511,9 @@ class SevenZipTest extends TestCase
     $this->assertFileExists($extractPath . '/Avatart.svg');
   }
 
-  /**
-   * @depends testTarBeforeExplicit
-   * @covers  \Verseles\SevenZip\SevenZip::autoUntar
-   * @covers  \Verseles\SevenZip\SevenZip::shouldAutoUntar
-   * @return void
-   */
+  #[Covers('\Verseles\SevenZip\SevenZip::autoUntar')]
+  #[Covers('\Verseles\SevenZip\SevenZip::shouldAutoUntar')]
+  #[Depends('testTarBeforeExplicit')]
   public function testNotAutoUntar($tarPath)
   {
     $this->assertFileExists($tarPath);
@@ -572,13 +526,10 @@ class SevenZipTest extends TestCase
 
     $this->assertFileDoesNotExist($extractPath . '/Avatart.svg');
   }
-
-  /**
-   * @depends testTarBeforeExplicit
-   * @covers  \Verseles\SevenZip\SevenZip::deleteSourceAfterExtract
-   * @covers  \Verseles\SevenZip\SevenZip::shouldDeleteSourceAfterExtract
-   * @return void
-   */
+  
+  #[Covers('\Verseles\SevenZip\SevenZip::deleteSourceAfterExtract')]
+  #[Covers('\Verseles\SevenZip\SevenZip::shouldDeleteSourceAfterExtract')]
+  #[Depends('testTarBeforeExplicit')]
   public function testDeleteSourceAfterExtract($tarPath)
   {
     $this->assertFileExists($tarPath);
