@@ -124,10 +124,17 @@ class SevenZip
   protected ?bool $encryptNames = TRUE;
   
   protected int $timeout = 300;
-  
+
   protected int $idleTimeout = 120;
-  
+
   protected bool $deleteSourceAfterExtract = FALSE;
+
+  /**
+   * Cache for parsed 7-Zip info to avoid repeated subprocess calls.
+   *
+   * @var ?array
+   */
+  protected ?array $parsedInfoCache = NULL;
   
   /**
    * The encryption method to be used for ZIP archives.
@@ -210,7 +217,7 @@ class SevenZip
    *
    * @return SevenZip The current instance of the SevenZip class.
    */
-  public function setSevenZipPath(string $sevenZipPath) : SevenZip
+  public function setSevenZipPath(string $sevenZipPath) : static
   {
     $this->sevenZipPath = $sevenZipPath;
     return $this;
@@ -340,7 +347,7 @@ class SevenZip
    *
    * @return SevenZip The current instance of the SevenZip class.
    */
-  public function setCustomFlags(array $customFlags) : SevenZip
+  public function setCustomFlags(array $customFlags) : static
   {
     $this->customFlags = $customFlags;
     return $this;
@@ -546,7 +553,8 @@ class SevenZip
   {
     $process = new Process($command);
     $process->setTimeout($this->getTimeout());
-    
+    $process->setIdleTimeout($this->getIdleTimeout());
+
     $process->run(
       $secondary
         ? NULL
@@ -561,7 +569,7 @@ class SevenZip
     
     if (!$process->isSuccessful()) {
       throw new \RuntimeException(
-        "Command: " . implode(" ", $command) . "\n" .
+        "Command: " . $this->maskSensitiveData(implode(" ", $command)) . "\n" .
         "Output: " . $process->getOutput() . "\n" .
         "Error Output: " .
         $process->getErrorOutput());
@@ -574,13 +582,38 @@ class SevenZip
     
     return $process->getOutput();
   }
-  
+
+  /**
+   * Mask sensitive data (like passwords) in command strings for error messages.
+   *
+   * @param string $command The command string that may contain sensitive data.
+   *
+   * @return string The command string with sensitive data masked.
+   */
+  protected function maskSensitiveData(string $command) : string
+  {
+    // Mask password flags: -pPASSWORD or -p=PASSWORD
+    return preg_replace('/-p[=]?[^\s]+/', '-p********', $command);
+  }
+
+  /**
+   * Get the timeout value for process execution.
+   *
+   * @return int The timeout value in seconds.
+   */
   public function getTimeout() : int
   {
     return $this->timeout;
   }
-  
-  public function setTimeout(int $timeout) : SevenZip
+
+  /**
+   * Set the timeout value for process execution.
+   *
+   * @param int $timeout The timeout value in seconds.
+   *
+   * @return static The current instance of the SevenZip class.
+   */
+  public function setTimeout(int $timeout) : static
   {
     $this->timeout = $timeout;
     return $this;
@@ -631,12 +664,24 @@ class SevenZip
     return $this;
   }
   
+  /**
+   * Get the progress division factor for multi-step operations.
+   *
+   * @return int The progress division factor.
+   */
   public function getDivideProgressBy() : int
   {
     return $this->divideProgressBy;
   }
-  
-  public function setDivideProgressBy(int $number = 1) : SevenZip
+
+  /**
+   * Set the progress division factor for multi-step operations.
+   *
+   * @param int $number The progress division factor (must be positive).
+   *
+   * @return static The current instance of the SevenZip class.
+   */
+  public function setDivideProgressBy(int $number = 1) : static
   {
     $this->divideProgressBy = is_int($number) && $number > 0 ? $number : 1;
     return $this;
@@ -754,9 +799,25 @@ class SevenZip
     return $extensions;
   }
   
+  /**
+   * Get parsed information about 7-Zip capabilities.
+   * Results are cached to avoid repeated subprocess calls.
+   *
+   * @param string|null $output Optional pre-fetched output to parse.
+   *
+   * @return array The parsed data with version, formats, codecs, and hashers.
+   */
   protected function getParsedInfo(?string $output = NULL) : array
   {
-    return $this->parseInfoOutput($output ?? $this->getInfo());
+    if ($output !== NULL) {
+      return $this->parseInfoOutput($output);
+    }
+
+    if ($this->parsedInfoCache === NULL) {
+      $this->parsedInfoCache = $this->parseInfoOutput($this->getInfo());
+    }
+
+    return $this->parsedInfoCache;
   }
   
   /**
@@ -851,6 +912,14 @@ class SevenZip
     return $data;
   }
   
+  /**
+   * Enable creating a tar archive before compression.
+   * This preserves file permissions and attributes.
+   *
+   * @param bool $keepFileInfo Whether to preserve file permissions and attributes.
+   *
+   * @return $this The current instance of the SevenZip class.
+   */
   public function tarBefore(bool $keepFileInfo = TRUE) : self
   {
     return $this
@@ -865,7 +934,7 @@ class SevenZip
    *
    * @return $this The current instance of the SevenZip class.
    */
-  public function keepFileInfoOnTar(bool $keep) : SevenZip
+  public function keepFileInfoOnTar(bool $keep) : static
   {
     $this->keepFileInfoOnTar = $keep;
     return $this;
@@ -878,7 +947,7 @@ class SevenZip
    *
    * @return $this The current instance of the SevenZip class.
    */
-  public function forceTarBefore(bool $force) : SevenZip
+  public function forceTarBefore(bool $force) : static
   {
     $this->forceTarBefore = $force;
     return $this;
@@ -937,8 +1006,8 @@ class SevenZip
       $output = $this->runCommand($command);
     }
     
-    if ($shouldDeleteSourceAfterExtract) {
-      @unlink($sourcePath);
+    if ($shouldDeleteSourceAfterExtract && is_file($sourcePath)) {
+      unlink($sourcePath);
     }
     
     return $output;
@@ -1013,6 +1082,11 @@ class SevenZip
     return $this;
   }
   
+  /**
+   * Check if auto-untar is enabled for extraction.
+   *
+   * @return bool Whether auto-untar is enabled.
+   */
   public function shouldAutoUntar() : bool
   {
     return $this->autoUntar;
@@ -1106,7 +1180,7 @@ class SevenZip
    *
    * @return SevenZip The current instance of the SevenZip class.
    */
-  protected function setAlwaysFlags(array $alwaysFlags) : SevenZip
+  protected function setAlwaysFlags(array $alwaysFlags) : static
   {
     $this->alwaysFlags = $alwaysFlags;
     return $this;
@@ -1127,8 +1201,6 @@ class SevenZip
     $lines = explode("\n", $output);
     $part = '';
 
-//    var_dump($lines);
-    
     foreach ($lines as $line) {
       if ($part === '' && preg_match('/^--$/', $line)) {
         $part = 'header';
@@ -1192,6 +1264,11 @@ class SevenZip
     ];
   }
   
+  /**
+   * Check if source file should be deleted after extraction.
+   *
+   * @return bool Whether to delete source after extraction.
+   */
   public function shouldDeleteSourceAfterExtract() : bool
   {
     return $this->deleteSourceAfterExtract;
@@ -1224,15 +1301,13 @@ class SevenZip
     $sz->progress($this->getProgressCallback());
     
     
-    // 'snoi' => store owner id in archive, extract owner id from archive (tar/Linux)
-    // 'snon' => store owner name in archive (tar/Linux)
-    // 'mtc'  => Stores Creation timestamps for files (for pax method).
-    // 'mta'  => Stores last Access timestamps for files (for pax method).
-    // 'mtm'  => Stores last Modification timestamps for files ).
+    // TAR flags for preserving file info:
+    // 'snoi' => store owner id in archive (tar/Linux)
+    // 'snon' => store owner name - disabled due to segfault on Linux
+    // 'mtc/mta/mtm' => timestamps (creation/access/modification)
     if ($this->shouldKeepFileInfoOnTar()) {
       $sz
         ->addFlag('snoi')
-//        ->addFlag('snon') // @FIXME on linux causes an error "Segmentation fault"
         ->addFlag('mtc', 'on')
         ->addFlag('mta', 'on')
         ->addFlag('mtm', 'on');
@@ -1271,7 +1346,14 @@ class SevenZip
     return $this->setSourcePath($path);
   }
   
-  public function deleteSourceAfterExtract(bool $delete = TRUE) : SevenZip
+  /**
+   * Set whether to delete the source file after extraction.
+   *
+   * @param bool $delete Whether to delete source after extraction.
+   *
+   * @return static The current instance of the SevenZip class.
+   */
+  public function deleteSourceAfterExtract(bool $delete = TRUE) : static
   {
     $this->deleteSourceAfterExtract = $delete;
     return $this;
@@ -1299,7 +1381,14 @@ class SevenZip
     return $this->keepFileInfoOnTar;
   }
   
-  public function autoUntar(bool $auto = TRUE) : SevenZip
+  /**
+   * Set whether to automatically extract inner tar archives.
+   *
+   * @param bool $auto Whether to enable auto-untar.
+   *
+   * @return static The current instance of the SevenZip class.
+   */
+  public function autoUntar(bool $auto = TRUE) : static
   {
     $this->autoUntar = $auto;
     return $this;
@@ -1365,6 +1454,13 @@ class SevenZip
     return $this->runCommand($command);
   }
   
+  /**
+   * Get the value of a custom flag.
+   *
+   * @param string $flag The flag name to retrieve.
+   *
+   * @return mixed The flag value or NULL if not set.
+   */
   public function getFlag(string $flag) : mixed
   {
     return $this->customFlags[$flag] ?? NULL;
@@ -1399,12 +1495,17 @@ class SevenZip
    *
    * @return $this The current instance of the SevenZip class.
    */
-  public function setZipEncryptionMethod(string $zipEncryptionMethod) : SevenZip
+  public function setZipEncryptionMethod(string $zipEncryptionMethod) : static
   {
     $this->zipEncryptionMethod = $zipEncryptionMethod;
     return $this;
   }
   
+  /**
+   * Check if file names encryption is enabled.
+   *
+   * @return bool|null Whether file names encryption is enabled.
+   */
   public function getEncryptNames() : ?bool
   {
     return $this->encryptNames;
@@ -1424,7 +1525,7 @@ class SevenZip
    *
    * @return $this The current instance of the SevenZip class.
    */
-  public function setEncryptNames(?bool $encrypt) : SevenZip
+  public function setEncryptNames(?bool $encrypt) : static
   {
     $this->encryptNames = $encrypt;
     return $this;
@@ -1476,15 +1577,13 @@ class SevenZip
       $sz->progress($this->getProgressCallback());
       
       
-      // 'snoi' => store owner id in archive, extract owner id from archive (tar/Linux)
-      // 'snon' => store owner name in archive (tar/Linux)
-      // 'mtc'  => Stores Creation timestamps for files (for pax method).
-      // 'mta'  => Stores last Access timestamps for files (for pax method).
-      // 'mtm'  => Stores last Modification timestamps for files ).
+      // TAR flags for preserving file info:
+      // 'snoi' => store owner id in archive (tar/Linux)
+      // 'snon' => store owner name - disabled due to segfault on Linux
+      // 'mtc/mta/mtm' => timestamps (creation/access/modification)
       if ($this->shouldKeepFileInfoOnTar()) {
         $sz
           ->addFlag("snoi")
-//          ->addFlag("snon") // @FIXME on linux causes a error "Segmentation fault"
           ->addFlag("mtc", "on")
           ->addFlag("mta", "on")
           ->addFlag("mtm", "on");
@@ -1501,9 +1600,10 @@ class SevenZip
       $this->setSourcePath($tarPath)->deleteSourceAfterCompress();
     }
     catch (Exception $e) {
-      @unlink($tarPath);
+      if (is_file($tarPath)) {
+        unlink($tarPath);
+      }
       throw $e;
-      // @TODO use native tar?
     }
     
     return $this;
@@ -1526,7 +1626,7 @@ class SevenZip
    *
    * @return $this The current instance of the SevenZip class.
    */
-  public function setAlreadyTarred(bool $alreadyTarred) : SevenZip
+  public function setAlreadyTarred(bool $alreadyTarred) : static
   {
     $this->alreadyTarred = $alreadyTarred;
     return $this;
@@ -1562,7 +1662,12 @@ class SevenZip
     return $this->formatFlags ?? [];
   }
   
-  public function setFormatFlags() : SevenZip
+  /**
+   * Set the format flags based on the current format.
+   *
+   * @return static The current instance of the SevenZip class.
+   */
+  public function setFormatFlags() : static
   {
     $this->formatFlags = match ($this->getFormat()) {
       'zip', 'tar.zip' => ['tzip'],
@@ -1607,12 +1712,20 @@ class SevenZip
   /**
    * Set the compression level using the -mx flag.
    *
-   * @param int $level The compression level to be used.
+   * @param int $level The compression level to be used (0-9, or 0-22 for zstd).
    *
    * @return $this The current instance of the SevenZip class.
+   *
+   * @throws \InvalidArgumentException If the level is out of valid range.
    */
   public function mx(int $level) : self
   {
+    $maxLevel = in_array($this->getFormat(), ['zstd', 'zst']) ? 22 : 9;
+    if ($level < 0 || $level > $maxLevel) {
+      throw new \InvalidArgumentException(
+        "Compression level must be between 0 and {$maxLevel}, got {$level}"
+      );
+    }
     return $this->addFlag("mx", $level);
   }
   
@@ -1649,7 +1762,14 @@ class SevenZip
     };
   }
   
-  public function mmem(int|string $size = 24)
+  /**
+   * Set the memory limit for compression.
+   *
+   * @param int|string $size The memory limit in megabytes or as a string (e.g., '32m').
+   *
+   * @return $this The current instance of the SevenZip class.
+   */
+  public function mmem(int|string $size = 24) : self
   {
     return $this->addFlag("mmem", $size);
   }
@@ -1657,32 +1777,60 @@ class SevenZip
   /**
    * Set the number of passes for compression.
    *
-   * @param int $number The number of passes for compression.
+   * @param int $number The number of passes for compression (1-15).
    *
    * @return $this The current instance of the SevenZip class.
+   *
+   * @throws \InvalidArgumentException If the number is out of valid range.
    */
   public function mpass(int $number = 7) : self
   {
+    if ($number < 1 || $number > 15) {
+      throw new \InvalidArgumentException(
+        "Number of passes must be between 1 and 15, got {$number}"
+      );
+    }
     return $this->addFlag("mpass", $number);
   }
   
   /**
    * Set the size of the Fast Bytes for the compression algorithm.
    *
-   * @param int $bytes The size of the Fast Bytes. The default value (when set) is 64.
+   * @param int $bytes The size of the Fast Bytes (5-273). The default value is 64.
    *
    * @return $this The current instance of the SevenZip class.
+   *
+   * @throws \InvalidArgumentException If the bytes value is out of valid range.
    */
   public function mfb(int $bytes = 64) : self
   {
+    if ($bytes < 5 || $bytes > 273) {
+      throw new \InvalidArgumentException(
+        "Fast bytes must be between 5 and 273, got {$bytes}"
+      );
+    }
     return $this->addFlag("mfb", $bytes);
   }
   
+  /**
+   * Set the dictionary size for compression.
+   *
+   * @param string $size The dictionary size (e.g., '32m', '64m', '900000b').
+   *
+   * @return $this The current instance of the SevenZip class.
+   */
   public function md(string $size = "32m") : self
   {
     return $this->addFlag("md", $size);
   }
-  
+
+  /**
+   * Enable or disable solid compression mode.
+   *
+   * @param bool|string|int $on Whether to enable solid mode.
+   *
+   * @return $this The current instance of the SevenZip class.
+   */
   public function ms(bool|string|int $on = TRUE) : self
   {
     return $this->addFlag("ms", $on ? "on" : "off");
@@ -1724,6 +1872,13 @@ class SevenZip
     return $this->addFlag("m2", $method);
   }
   
+  /**
+   * Alias for ms() - Enable or disable solid compression mode.
+   *
+   * @param bool|string|int $on Whether to enable solid mode.
+   *
+   * @return $this The current instance of the SevenZip class.
+   */
   public function solid(bool|string|int $on = TRUE) : self
   {
     return $this->ms($on);
@@ -1768,7 +1923,7 @@ class SevenZip
    *
    * @return $this The current instance of the SevenZip class.
    */
-  public function setIdleTimeout(int $idleTimeout) : SevenZip
+  public function setIdleTimeout(int $idleTimeout) : static
   {
     $this->idleTimeout = $idleTimeout;
     return $this;
