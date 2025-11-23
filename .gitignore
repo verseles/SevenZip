@@ -11,3 +11,4 @@ node_modules/
 ai.txt
 makefile
 merge.bash
+.phpunit.cache/
