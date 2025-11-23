@@ -1,0 +1,10 @@
+parameters:
+    level: 6
+    paths:
+        - src
+    excludePaths:
+        - vendor
+    reportUnmatchedIgnoredErrors: false
+    ignoreErrors:
+        # Allow mixed return types in some places
+        - '#Method .+ should return .+ but returns mixed#'

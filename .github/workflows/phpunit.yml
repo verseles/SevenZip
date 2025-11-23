@@ -1,4 +1,4 @@
-name: PHPUnit Tests
+name: CI
 
 on:
   push:
@@ -10,16 +10,56 @@ permissions:
   contents: read
 
 jobs:
+  lint:
+    name: Code Style (Pint)
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          coverage: none
+
+      - name: Install dependencies
+        run: composer install -q --no-ansi --no-interaction --no-scripts --no-progress --prefer-dist
+
+      - name: Run Pint
+        run: vendor/bin/pint --test
+
+  analyse:
+    name: Static Analysis (PHPStan)
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          coverage: none
+
+      - name: Install dependencies
+        run: composer install -q --no-ansi --no-interaction --no-scripts --no-progress --prefer-dist
+
+      - name: Run PHPStan
+        run: vendor/bin/phpstan analyse --error-format=github
+
   test:
+    name: Tests PHP ${{ matrix.php }} on ${{ matrix.os }}
     runs-on: ${{ matrix.os }}
+    needs: [lint, analyse]
 
     strategy:
       fail-fast: false
       matrix:
         os: [ubuntu-latest, macos-latest]
         php: ['8.2', '8.3', '8.4']
-
-    name: PHP ${{ matrix.php }} on ${{ matrix.os }}
 
     steps:
       - name: Checkout code
@@ -30,7 +70,7 @@ jobs:
         with:
           php-version: ${{ matrix.php }}
           extensions: mbstring
-          coverage: none
+          coverage: xdebug
 
       - name: Validate composer.json and composer.lock
         run: composer validate --strict
@@ -48,4 +88,33 @@ jobs:
         run: composer install -q --no-ansi --no-interaction --no-scripts --no-progress --prefer-dist
 
       - name: Run test suite
-        run: composer run-script test
+        run: vendor/bin/phpunit --testdox --display-warnings --color=always
+
+  coverage:
+    name: Code Coverage
+    runs-on: ubuntu-latest
+    needs: test
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: mbstring
+          coverage: xdebug
+
+      - name: Install dependencies
+        run: composer install -q --no-ansi --no-interaction --no-scripts --no-progress --prefer-dist
+
+      - name: Generate coverage report
+        run: vendor/bin/phpunit --coverage-clover=coverage/clover.xml --coverage-text
+
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v4
+        with:
+          files: coverage/clover.xml
+          fail_ci_if_error: false
+        continue-on-error: true

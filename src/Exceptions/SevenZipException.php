@@ -2,14 +2,15 @@
 
 namespace Verseles\SevenZip\Exceptions;
 
+use Exception;
 use Throwable;
 
 /**
- * Exception thrown when the 7-Zip executable is not found or not executable.
+ * Base exception for all SevenZip related errors.
  */
-class ExecutableNotFoundException extends SevenZipException {
+class SevenZipException extends Exception {
     public function __construct(
-        string $message = 'Executable 7z not found.',
+        string $message = 'An error occurred during 7-Zip operation.',
         int $code = 0,
         ?Throwable $previous = NULL,
     ) {

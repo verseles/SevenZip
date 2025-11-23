@@ -5,11 +5,11 @@ namespace Verseles\SevenZip\Exceptions;
 use Throwable;
 
 /**
- * Exception thrown when the 7-Zip executable is not found or not executable.
+ * Exception thrown when the password is incorrect or missing for encrypted archives.
  */
-class ExecutableNotFoundException extends SevenZipException {
+class InvalidPasswordException extends SevenZipException {
     public function __construct(
-        string $message = 'Executable 7z not found.',
+        string $message = 'Invalid or missing password for encrypted archive.',
         int $code = 0,
         ?Throwable $previous = NULL,
     ) {
