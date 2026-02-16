@@ -1,4 +1,5 @@
 <?php
+
 // run this: php -f try.php
 
 require_once __DIR__ . '/vendor/autoload.php';
@@ -20,7 +21,7 @@ echo "✅\n";
 
 echo 'Compressing archive... ';
 $callback = function ($progress) {
-  echo "\n" . $progress . "%\n";
+    echo "\n" . $progress . "%\n";
 };
 $output   = $sevenZip
   ->progress($callback)
@@ -50,7 +51,7 @@ echo "Output: " . $output . "\n";
 echo 'Extracting archive... ';
 $output = $sevenZip
   ->setProgressCallback(function ($progress) {
-    echo "\n" . $progress . "%\n";
+      echo "\n" . $progress . "%\n";
   })
 //  ->autoUntar(false)
   ->source($archivePath)
@@ -77,22 +78,22 @@ echo "Output: " . $output . "\n";
  */
 function clearDirectory($dir)
 {
-  if (!is_dir($dir)) {
-    return false;
-  }
-
-  $files = array_diff(scandir($dir), ['.', '..']);
-
-  foreach ($files as $file) {
-    $filePath = $dir . '/' . $file;
-
-    if (is_dir($filePath)) {
-      clearDirectory($filePath);
-      rmdir($filePath);
-    } else {
-      unlink($filePath);
+    if (!is_dir($dir)) {
+        return false;
     }
-  }
 
-  return true;
+    $files = array_diff(scandir($dir), ['.', '..']);
+
+    foreach ($files as $file) {
+        $filePath = $dir . '/' . $file;
+
+        if (is_dir($filePath)) {
+            clearDirectory($filePath);
+            rmdir($filePath);
+        } else {
+            unlink($filePath);
+        }
+    }
+
+    return true;
 }

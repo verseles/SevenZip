@@ -14,6 +14,8 @@
     "symfony/process": "^7.0"
   },
   "require-dev": {
+    "laravel/pint": "^1.18",
+    "phpstan/phpstan": "^2.0",
     "phpunit/phpunit": "^11.1"
   },
   "autoload": {
@@ -27,7 +29,16 @@
     }
   },
   "scripts": {
-    "test": "vendor/bin/phpunit tests/SevenZipTest.php --testdox --display-warnings --color=always"
+    "test": "vendor/bin/phpunit tests/SevenZipTest.php --testdox --display-warnings --color=always",
+    "test:coverage": "vendor/bin/phpunit tests/SevenZipTest.php --coverage-text --coverage-html=coverage",
+    "lint": "vendor/bin/pint",
+    "lint:check": "vendor/bin/pint --test",
+    "analyse": "vendor/bin/phpstan analyse",
+    "precommit": [
+      "@lint:check",
+      "@analyse",
+      "@test"
+    ]
   },
   "config": {
     "sort-packages": true

@@ -1,0 +1,43 @@
+parameters:
+	ignoreErrors:
+		-
+			message: '#^Deprecated in PHP 8\.4\: Parameter \#3 \$previous \(Throwable\) is implicitly nullable via default value null\.$#'
+			identifier: parameter.implicitlyNullable
+			count: 1
+			path: src/Exceptions/ExecutableNotFoundException.php
+
+		-
+			message: '#^Deprecated in PHP 8\.4\: Parameter \#2 \$value \(string\) is implicitly nullable via default value null\.$#'
+			identifier: parameter.implicitlyNullable
+			count: 1
+			path: src/SevenZip.php
+
+		-
+			message: '#^Method Verseles\\SevenZip\\SevenZip\:\:addFlag\(\) should return \$this\(Verseles\\SevenZip\\SevenZip\) but returns Verseles\\SevenZip\\SevenZip\.$#'
+			identifier: return.type
+			count: 1
+			path: src/SevenZip.php
+
+		-
+			message: '#^Method Verseles\\SevenZip\\SevenZip\:\:removeFlag\(\) should return \$this\(Verseles\\SevenZip\\SevenZip\) but returns Verseles\\SevenZip\\SevenZip\.$#'
+			identifier: return.type
+			count: 1
+			path: src/SevenZip.php
+
+		-
+			message: '#^Method Verseles\\SevenZip\\SevenZip\:\:setFormat\(\) should return \$this\(Verseles\\SevenZip\\SevenZip\) but returns Verseles\\SevenZip\\SevenZip\.$#'
+			identifier: return.type
+			count: 1
+			path: src/SevenZip.php
+
+		-
+			message: '#^Method Verseles\\SevenZip\\SevenZip\:\:ultra\(\) should return static\(Verseles\\SevenZip\\SevenZip\) but returns Verseles\\SevenZip\\SevenZip\.$#'
+			identifier: return.type
+			count: 1
+			path: src/SevenZip.php
+
+		-
+			message: '#^PHPDoc tag @param for parameter \$value with type mixed is not subtype of native type string\|null\.$#'
+			identifier: parameter.phpDocType
+			count: 1
+			path: src/SevenZip.php
