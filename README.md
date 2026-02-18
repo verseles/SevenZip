@@ -150,7 +150,7 @@ if ($sevenZip->checkSupport(['zip', 'tar', '7z'])) {
 - [x] Auto untar on extraction
 - [x] Filter files by patterns
 - [x] Encrypt and decrypt
-- [ ] Test files using 7z test command
+- [x] Test files using 7z test command
 - [x] Detect supported formats by the OS
 - [x] Add built-in binaries for mac and linux
 - [x] ~~Use docker for PHPUnit tests~~ not needed with built-in binaries
@@ -854,6 +854,22 @@ Gets whether preserving file permissions and attributes when creating a tar arch
 Checks if the source has already been tarred.
 
 **Returns**: Whether the source has already been tarred.
+
+### `test(): string`
+
+Tests the integrity of the archive.
+
+**Returns**: the command output on success.
+
+**Throws**
+
+- `InvalidArgumentException`: If source path is not set.
+
+**Example**
+
+```php
+$sevenZip->test();
+```
 
 ### `ultra(): self`
 
