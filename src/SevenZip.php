@@ -137,6 +137,13 @@ class SevenZip
   protected string $zipEncryptionMethod = "AES256";
   
   /**
+   * Cache for parsed info output to avoid redundant execution of '7z i' command.
+   *
+   * @var array
+   */
+  protected static array $parsedInfoCache = [];
+
+  /**
    * Constructs a new SevenZip instance.
    *
    * If $sevenZipPath is set, it will be used as the path to the 7-Zip executable.
@@ -756,7 +763,19 @@ class SevenZip
   
   protected function getParsedInfo(?string $output = NULL) : array
   {
-    return $this->parseInfoOutput($output ?? $this->getInfo());
+    if ($output !== NULL) {
+      return $this->parseInfoOutput($output);
+    }
+
+    $path = $this->getSevenZipPath();
+    if (isset(self::$parsedInfoCache[$path])) {
+      return self::$parsedInfoCache[$path];
+    }
+
+    $info = $this->parseInfoOutput($this->getInfo());
+    self::$parsedInfoCache[$path] = $info;
+
+    return $info;
   }
   
   /**

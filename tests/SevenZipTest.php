@@ -544,5 +544,30 @@ class SevenZipTest extends TestCase
 
   }
 
+  #[Test]
+  public function testCheckSupportCaching(): void
+  {
+    // Clear the cache first
+    $reflection = new \ReflectionClass(SevenZip::class);
+    $property = $reflection->getProperty('parsedInfoCache');
+    $property->setAccessible(true);
+    $property->setValue(null, []);
+
+    $sz = new class extends SevenZip {
+      public int $runCommandCount = 0;
+      protected function runCommand(array $command, bool $secondary = FALSE) : string {
+        // Only count the 'i' (info) command
+        if (in_array('i', $command)) {
+          $this->runCommandCount++;
+        }
+        return parent::runCommand($command, $secondary);
+      }
+    };
+
+    $sz->checkSupport('zip');
+    $sz->checkSupport('7z');
+
+    $this->assertEquals(1, $sz->runCommandCount, 'runCommand should be called only once for info');
+  }
 
 }
