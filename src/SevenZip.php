@@ -15,6 +15,14 @@ class SevenZip
    * @var ?string
    */
   protected ?string $sevenZipPath = NULL;
+
+  /**
+   * Cache for the 7-Zip executable information.
+   *
+   * @var array
+   */
+  protected static array $infoCache = [];
+
   /**
    * Array of flags that are always used when running 7-Zip commands.
    * These flags are used to suppress progress output and automatically confirm operations.
@@ -531,7 +539,15 @@ class SevenZip
    */
   public function getInfo() : string
   {
-    return $this->runCommand([$this->getSevenZipPath(), "i"], secondary: TRUE);
+    $path = $this->getSevenZipPath();
+    if (isset(self::$infoCache[$path])) {
+      return self::$infoCache[$path];
+    }
+
+    $output = $this->runCommand([$path, "i"], secondary: TRUE);
+    self::$infoCache[$path] = $output;
+
+    return $output;
   }
   
   /**
