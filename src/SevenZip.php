@@ -9,6 +9,8 @@ use Verseles\SevenZip\Exceptions\ExecutableNotFoundException;
 
 class SevenZip
 {
+  protected static array $cachedInfo = [];
+
   /**
    * Path to the 7-Zip executable file. If not set, it will be automatically detected.
    *
@@ -531,7 +533,13 @@ class SevenZip
    */
   public function getInfo() : string
   {
-    return $this->runCommand([$this->getSevenZipPath(), "i"], secondary: TRUE);
+    $path = $this->getSevenZipPath();
+
+    if (!isset(self::$cachedInfo[$path])) {
+      self::$cachedInfo[$path] = $this->runCommand([$path, "i"], secondary: TRUE);
+    }
+
+    return self::$cachedInfo[$path];
   }
   
   /**
