@@ -544,5 +544,41 @@ class SevenZipTest extends TestCase
 
   }
 
+  #[Covers('\Verseles\SevenZip\SevenZip::getInfo')]
+  public function testGetInfoCaching(): void
+  {
+    $spy = new SevenZipSpy();
 
+    // Reset cache
+    $reflection = new \ReflectionClass(SevenZip::class);
+    $property = $reflection->getProperty('cachedInfo');
+    $property->setAccessible(true);
+    $property->setValue(null, []);
+
+    // First call, should run command
+    $spy->getInfo();
+    $this->assertEquals(1, $spy->runCommandCalls);
+
+    // Second call, should use cache
+    $spy->getInfo();
+    $this->assertEquals(1, $spy->runCommandCalls);
+
+    // Check support should also use cache (uses getInfo internally)
+    $spy->checkSupport('zip');
+    $this->assertEquals(1, $spy->runCommandCalls);
+  }
+
+}
+
+class SevenZipSpy extends SevenZip
+{
+  public int $runCommandCalls = 0;
+
+  protected function runCommand(array $command, bool $secondary = FALSE): string
+  {
+    if (isset($command[1]) && $command[1] === 'i') {
+      $this->runCommandCalls++;
+    }
+    return parent::runCommand($command, $secondary);
+  }
 }
