@@ -15,6 +15,14 @@ class SevenZip
    * @var ?string
    */
   protected ?string $sevenZipPath = NULL;
+
+  /**
+   * Static cache for parsed information about 7-Zip executables.
+   *
+   * @var array
+   */
+  protected static array $cachedInfo = [];
+
   /**
    * Array of flags that are always used when running 7-Zip commands.
    * These flags are used to suppress progress output and automatically confirm operations.
@@ -756,7 +764,16 @@ class SevenZip
   
   protected function getParsedInfo(?string $output = NULL) : array
   {
-    return $this->parseInfoOutput($output ?? $this->getInfo());
+    if ($output !== NULL) {
+      return $this->parseInfoOutput($output);
+    }
+
+    $path = $this->getSevenZipPath();
+    if (!array_key_exists($path, self::$cachedInfo)) {
+      self::$cachedInfo[$path] = $this->parseInfoOutput($this->getInfo());
+    }
+
+    return self::$cachedInfo[$path];
   }
   
   /**
