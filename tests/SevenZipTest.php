@@ -544,5 +544,31 @@ class SevenZipTest extends TestCase
 
   }
 
+  #[Covers('\Verseles\SevenZip\SevenZip::verify')]
+  public function testVerify(): void
+  {
+    $format = '7z';
+    $directory = $this->testDir . '/source';
+    $archive = $this->testDir . '/target/verify_archive.' . $format;
 
+    // Create an archive first
+    $this->sevenZip
+      ->format($format)
+      ->faster()
+      ->source($directory)
+      ->target($archive)
+      ->compress();
+
+    $this->assertFileExists($archive);
+
+    // Verify the archive
+    $output = $this->sevenZip
+      ->source($archive)
+      ->verify();
+
+    $this->assertIsString($output);
+    $this->assertStringContainsString('Everything is Ok', $output);
+
+    unlink($archive);
+  }
 }
