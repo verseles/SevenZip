@@ -544,5 +544,41 @@ class SevenZipTest extends TestCase
 
   }
 
+  #[Covers('\Verseles\SevenZip\SevenZip::verify')]
+  public function testVerify(): void
+  {
+    $format = '7z';
+    $directory = $this->testDir . '/source';
+    $archive = $this->testDir . '/target/verify_archive.' . $format;
 
+    // Create a valid archive
+    $this->sevenZip
+      ->format($format)
+      ->faster()
+      ->source($directory)
+      ->target($archive)
+      ->compress();
+
+    $this->assertFileExists($archive);
+
+    // Verify the archive
+    $output = $this->sevenZip
+      ->source($archive)
+      ->verify();
+
+    // 7-Zip output usually contains "Everything is Ok" on success
+    // but the exact output might vary. However, runCommand throws exception on failure.
+    // So if we are here, it means success.
+    // We can check if output is not empty.
+    $this->assertNotEmpty($output);
+
+    // Create an invalid archive (just a text file)
+    $invalidArchive = $this->testDir . '/target/invalid_archive.7z';
+    file_put_contents($invalidArchive, 'This is not a 7z archive');
+
+    $this->expectException(\RuntimeException::class);
+    $this->sevenZip
+      ->source($invalidArchive)
+      ->verify();
+  }
 }
