@@ -27,7 +27,7 @@
     }
   },
   "scripts": {
-    "test": "vendor/bin/phpunit tests/SevenZipTest.php --testdox --display-warnings --color=always"
+    "test": "vendor/bin/phpunit tests/ --testdox --display-warnings --color=always"
   },
   "config": {
     "sort-packages": true
