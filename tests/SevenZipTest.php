@@ -544,5 +544,52 @@ class SevenZipTest extends TestCase
 
   }
 
+  #[Covers('\Verseles\SevenZip\SevenZip::verify')]
+  #[DataProvider('compressAndExtractDataProvider')]
+  #[Depends('testCompress')]
+  public function testVerify(string $format): void
+  {
+    $archive = $this->testDir . '/target/archive.' . $format;
 
+    // Re-compress the archive if it was deleted by testExtract
+    if (!file_exists($archive)) {
+      $directory = $this->testDir . '/source';
+      $this->sevenZip->reset();
+
+      if ($format === 'zip') {
+          $this->sevenZip->setZipEncryptionMethod('AES256')->encrypt('my_secret_password');
+      }
+
+      $this->sevenZip
+        ->format($format)
+        ->faster()
+        ->source(path: $directory)
+        ->target(path: $archive)
+        ->compress();
+    }
+
+    $this->sevenZip->reset();
+
+    if ($format === 'zip') {
+        $this->sevenZip->setPassword('my_secret_password');
+    }
+
+    $result = $this->sevenZip
+      ->source($archive)
+      ->verify();
+
+    $this->assertStringContainsString('Everything is Ok', $result);
+  }
+
+  #[Covers('\Verseles\SevenZip\SevenZip::verify')]
+  public function testVerifyInvalidArchive(): void
+  {
+    $file = $this->testDir . '/source/Avatart.svg';
+
+    $this->expectException(\RuntimeException::class);
+
+    $this->sevenZip
+      ->source($file)
+      ->verify();
+  }
 }
