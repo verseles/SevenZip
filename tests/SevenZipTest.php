@@ -545,4 +545,64 @@ class SevenZipTest extends TestCase
   }
 
 
+
+  #[Covers('\Verseles\SevenZip\SevenZip::verify')]
+  #[DataProvider('compressAndExtractDataProvider')]
+  public function testVerify(string $format): void
+  {
+    $directory = $this->testDir . '/source';
+    $archive = $this->testDir . '/target/archive_verify.' . $format;
+
+    // Compress first
+    $this->sevenZip
+      ->format($format)
+      ->faster()
+      ->source(path: $directory)
+      ->target(path: $archive)
+      ->compress();
+
+    $output = $this->sevenZip
+      ->source($archive)
+      ->verify();
+
+    $this->assertStringContainsString('Everything is Ok', $output);
+
+    @unlink($archive);
+  }
+
+  #[Covers('\Verseles\SevenZip\SevenZip::verify')]
+  public function testVerifyWithPassword(): void
+  {
+    $password      = 'my_secret_password';
+    $sourceFile    = $this->testDir . '/source/Avatart.svg';
+    $encryptedFile = $this->testDir . '/target/test.encrypted.verify.7z';
+
+    // Compress and encrypt the file
+    $this->sevenZip
+      ->faster()
+      ->encrypt($password)
+      ->source($sourceFile)
+      ->target($encryptedFile)
+      ->compress();
+
+    $this->assertFileExists($encryptedFile);
+
+    // Verify the encrypted file
+    $output = $this->sevenZip->decrypt($password)
+      ->source($encryptedFile)
+      ->verify();
+
+    $this->assertStringContainsString('Everything is Ok', $output);
+
+    @unlink($encryptedFile);
+  }
+
+  #[Covers('\Verseles\SevenZip\SevenZip::verify')]
+  public function testVerifyThrowsExceptionWithoutSource(): void
+  {
+    $this->expectException(\InvalidArgumentException::class);
+    $this->expectExceptionMessage('Archive path (source) must be set');
+
+    $this->sevenZip->verify();
+  }
 }
