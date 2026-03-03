@@ -885,6 +885,34 @@ class SevenZip
   }
   
   /**
+   * Verifies the integrity of an archive.
+   *
+   * @return string The output of the 7-Zip command on success.
+   * @throws \InvalidArgumentException If the source path is not set.
+   * @throws \RuntimeException If the verification command fails.
+   */
+  public function verify() : string
+  {
+    if (!$this->getSourcePath()) {
+      throw new \InvalidArgumentException("Archive path (source) must be set for verification");
+    }
+
+    if ($this->getPassword()) {
+      $this->addFlag("p", $this->getPassword(), glued: TRUE);
+    }
+
+    $command = [
+      $this->getSevenZipPath(),
+      "t",
+      ...$this->flagrize($this->getAlwaysFlags()),
+      ...$this->flagrize($this->getCustomFlags()),
+      $this->getSourcePath(),
+    ];
+
+    return $this->runCommand($command);
+  }
+
+  /**
    * Extract an archive.
    *
    * @return string The output of the 7-Zip command.
