@@ -544,5 +544,60 @@ class SevenZipTest extends TestCase
 
   }
 
+  #[Covers('\Verseles\SevenZip\SevenZip::verify')]
+  public function testVerify(): void
+  {
+    $format = 'zip';
+    $directory = $this->testDir . '/source';
+    $archive = $this->testDir . '/target/verify_archive.' . $format;
+
+    $this->sevenZip
+      ->format($format)
+      ->faster()
+      ->source($directory)
+      ->target($archive)
+      ->compress();
+
+    $this->assertFileExists($archive);
+
+    $output = $this->sevenZip->source($archive)->verify();
+
+    $this->assertStringContainsString('Everything is Ok', $output);
+  }
+
+  #[Covers('\Verseles\SevenZip\SevenZip::verify')]
+  public function testVerifyWithPassword(): void
+  {
+    $password = 'my_secret_password';
+    $format = '7z';
+    $directory = $this->testDir . '/source';
+    $archive = $this->testDir . '/target/verify_archive_enc.' . $format;
+
+    $this->sevenZip
+      ->format($format)
+      ->encrypt($password)
+      ->faster()
+      ->source($directory)
+      ->target($archive)
+      ->compress();
+
+    $this->assertFileExists($archive);
+
+    $output = $this->sevenZip
+      ->setPassword($password)
+      ->source($archive)
+      ->verify();
+
+    $this->assertStringContainsString('Everything is Ok', $output);
+  }
+
+  #[Covers('\Verseles\SevenZip\SevenZip::verify')]
+  public function testVerifyThrowsExceptionWhenSourceNotSet(): void
+  {
+    $this->expectException(\InvalidArgumentException::class);
+    $this->expectExceptionMessage('Archive path (source) must be set');
+
+    $this->sevenZip->verify();
+  }
 
 }
