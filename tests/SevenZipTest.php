@@ -379,6 +379,66 @@ class SevenZipTest extends TestCase
     $this->assertFalse($this->sevenZip->checkSupport('my_super_futurist_format'), 'Check using unknown format failure');
   }
 
+  #[Covers('\Verseles\SevenZip\SevenZip::verify')]
+  public function testVerify(): void
+  {
+    $format    = 'zip';
+    $directory = $this->testDir . '/source/*';
+    $archive   = $this->testDir . '/target/verify_archive.' . $format;
+
+    // First compress
+    $this->sevenZip
+      ->format($format)
+      ->faster()
+      ->source($directory)
+      ->target($archive)
+      ->compress();
+
+    $this->assertFileExists($archive);
+
+    // Now verify
+    $this->sevenZip->reset();
+    $output = $this->sevenZip
+      ->source($archive)
+      ->verify();
+
+    $this->assertStringContainsString('Everything is Ok', $output);
+
+    @unlink($archive);
+  }
+
+  #[Covers('\Verseles\SevenZip\SevenZip::verify')]
+  public function testVerifyEncryptedArchive(): void
+  {
+    $format    = 'zip';
+    $directory = $this->testDir . '/source/*';
+    $archive   = $this->testDir . '/target/verify_encrypted_archive.' . $format;
+    $password  = 'testpassword123';
+
+    // Compress and encrypt
+    $this->sevenZip
+      ->format($format)
+      ->encrypt($password)
+      ->setZipEncryptionMethod('AES256')
+      ->faster()
+      ->source($directory)
+      ->target($archive)
+      ->compress();
+
+    $this->assertFileExists($archive);
+
+    // Verify
+    $this->sevenZip->reset();
+    $output = $this->sevenZip
+      ->source($archive)
+      ->setPassword($password)
+      ->verify();
+
+    $this->assertStringContainsString('Everything is Ok', $output);
+
+    @unlink($archive);
+  }
+
   /**
    * Test excluding specific files from the archive.
    *
