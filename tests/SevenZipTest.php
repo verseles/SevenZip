@@ -239,6 +239,73 @@ class SevenZipTest extends TestCase
     $this->assertEquals($expected, $this->sevenZip->getCustomFlags());
   }
 
+  #[Covers('\Verseles\SevenZip\SevenZip::verify')]
+  public function testVerifyThrowsExceptionWithoutSourcePath(): void
+  {
+    $this->expectException(\InvalidArgumentException::class);
+    $this->expectExceptionMessage('Archive path (source) must be set');
+
+    $this->sevenZip->verify();
+  }
+
+  #[Covers('\Verseles\SevenZip\SevenZip::verify')]
+  #[DataProvider('compressAndExtractDataProvider')]
+  public function testVerify(string $format): void
+  {
+    $directory = $this->testDir . '/source';
+    $archive   = $this->testDir . '/target/archive_verify.' . $format;
+
+    // Compress
+    $this->sevenZip
+      ->format($format)
+      ->faster()
+      ->source(path: $directory)
+      ->target(path: $archive)
+      ->compress();
+
+    $this->assertFileExists(filename: $archive);
+
+    $this->sevenZip->reset();
+
+    $output = $this->sevenZip
+      ->source(path: $archive)
+      ->verify();
+
+    $this->assertStringContainsString('Everything is Ok', $output);
+
+    unlink($archive);
+  }
+
+  #[Covers('\Verseles\SevenZip\SevenZip::verify')]
+  public function testVerifyEncryptedArchive(): void
+  {
+    $password      = 'my_secret_password';
+    $sourceFile    = $this->testDir . '/source/Avatart.svg';
+    $encryptedFile = $this->testDir . '/target/test_verify_encrypted.7z';
+
+    // Compress and encrypt the file
+    $this->sevenZip
+      ->faster()
+      ->encrypt($password)
+      ->source($sourceFile)
+      ->target($encryptedFile)
+      ->compress();
+
+    $this->assertFileExists($encryptedFile);
+
+    $this->sevenZip->reset();
+
+    // Verify the encrypted file
+    $output = $this->sevenZip
+      ->decrypt($password)
+      ->source($encryptedFile)
+      ->verify();
+
+    $this->assertStringContainsString('Everything is Ok', $output);
+
+    unlink($encryptedFile);
+  }
+
   #[Covers('\Verseles\SevenZip\SevenZip::compress')]
   #[DataProvider('compressAndExtractDataProvider')]
   public function testCompress(string $format): void
