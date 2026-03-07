@@ -259,7 +259,7 @@ class SevenZipTest extends TestCase
 
   #[Covers('\Verseles\SevenZip\SevenZip::extract')]
   #[DataProvider('compressAndExtractDataProvider')]
-  #[Depends('testCompress')]
+  #[Depends('testVerifySuccess')]
   public function testExtract(string $format): void
   {
     $archive = $this->testDir . '/target/archive.' . $format;
@@ -312,6 +312,55 @@ class SevenZipTest extends TestCase
 
     $this->assertNotEmpty($progressHistory);
     $this->assertEquals(100, end($progressHistory));
+  }
+
+  #[Covers('\Verseles\SevenZip\SevenZip::verify')]
+  #[DataProvider('compressAndExtractDataProvider')]
+  #[Depends('testCompress')]
+  public function testVerifySuccess(string $format): void
+  {
+    $archive = $this->testDir . '/target/archive.' . $format;
+
+    $output = $this->sevenZip
+      ->source(path: $archive)
+      ->verify();
+
+    $this->assertStringContainsString('Everything is Ok', $output);
+  }
+
+  #[Covers('\Verseles\SevenZip\SevenZip::verify')]
+  public function testVerifyMissingSource(): void
+  {
+    $this->expectException(\InvalidArgumentException::class);
+    $this->expectExceptionMessage('Archive file path (source) must be set');
+
+    $this->sevenZip->verify();
+  }
+
+  #[Covers('\Verseles\SevenZip\SevenZip::verify')]
+  #[Depends('testEncryptAndDecrypt')]
+  public function testVerifyEncrypted(): void
+  {
+    $password      = 'my_secret_password';
+    $encryptedFile = $this->testDir . '/target/test.encrypted.7z';
+
+    // Without password it asks for password or fails, either way it throws an exception using runCommand
+    try {
+        $this->sevenZip
+            ->source($encryptedFile)
+            ->verify();
+        $this->fail('Expected an exception to be thrown when verifying an encrypted archive without a password');
+    } catch (\RuntimeException $e) {
+        $this->assertStringContainsString('Break signaled', $e->getMessage()); // 7z returns Break signaled when run without a terminal asking for a password
+    }
+
+    // With password it succeeds
+    $output = $this->sevenZip
+      ->setPassword($password)
+      ->source($encryptedFile)
+      ->verify();
+
+    $this->assertStringContainsString('Everything is Ok', $output);
   }
 
   #[Covers('\Verseles\SevenZip\SevenZip::encrypt')]

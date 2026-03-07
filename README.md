@@ -150,7 +150,7 @@ if ($sevenZip->checkSupport(['zip', 'tar', '7z'])) {
 - [x] Auto untar on extraction
 - [x] Filter files by patterns
 - [x] Encrypt and decrypt
-- [ ] Test files using 7z test command
+- [x] Test files using 7z test command
 - [x] Detect supported formats by the OS
 - [x] Add built-in binaries for mac and linux
 - [x] ~~Use docker for PHPUnit tests~~ not needed with built-in binaries
@@ -860,6 +860,22 @@ Checks if the source has already been tarred.
 Configures maximum compression settings based on the specified format.
 
 **Returns**: The current instance for method chaining.
+
+### `verify(): string`
+
+Verify an archive integrity.
+
+**Returns**: the command output on success.
+
+**Throws**
+
+- `InvalidArgumentException`: If source path is not set.
+
+**Example**
+
+```php
+$sevenZip->verify();
+```
 
 ## License
 
