@@ -257,9 +257,23 @@ class SevenZipTest extends TestCase
     $this->assertFileExists(filename: $archive);
   }
 
-  #[Covers('\Verseles\SevenZip\SevenZip::extract')]
+  #[Covers('\Verseles\SevenZip\SevenZip::verify')]
   #[DataProvider('compressAndExtractDataProvider')]
   #[Depends('testCompress')]
+  public function testVerify(string $format): void
+  {
+    $archive = $this->testDir . '/target/archive.' . $format;
+
+    $output = $this->sevenZip
+      ->source(path: $archive)
+      ->verify();
+
+    $this->assertStringContainsString('Everything is Ok', $output);
+  }
+
+  #[Covers('\Verseles\SevenZip\SevenZip::extract')]
+  #[DataProvider('compressAndExtractDataProvider')]
+  #[Depends('testVerify')]
   public function testExtract(string $format): void
   {
     $archive = $this->testDir . '/target/archive.' . $format;
