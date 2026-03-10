@@ -87,6 +87,13 @@ class SevenZipTest extends TestCase
     $this->assertEquals($expected, $result);
   }
 
+  public function testVerifyThrowsExceptionWithoutSource(): void
+  {
+      $this->expectException(\InvalidArgumentException::class);
+      $this->expectExceptionMessage('Archive path (source) must be set');
+      $this->sevenZip->verify();
+  }
+
   #[Covers('\Verseles\SevenZip\SevenZip::getAlwaysFlags')]
   #[Covers('\Verseles\SevenZip\SevenZip::setAlwaysFlags')]
   public function testGetAndSetAlwaysFlags(): void
@@ -257,9 +264,27 @@ class SevenZipTest extends TestCase
     $this->assertFileExists(filename: $archive);
   }
 
-  #[Covers('\Verseles\SevenZip\SevenZip::extract')]
+  #[Covers('\Verseles\SevenZip\SevenZip::verify')]
   #[DataProvider('compressAndExtractDataProvider')]
   #[Depends('testCompress')]
+  public function testVerify(string $format): void
+  {
+    $archive = $this->testDir . '/target/archive.' . $format;
+
+    $this->assertFileExists(filename: $archive);
+
+    $this->sevenZip
+      ->source(path: $archive);
+
+    $output = $this->sevenZip->verify();
+
+    $this->assertIsString($output);
+    $this->assertStringContainsString('Everything is Ok', $output);
+  }
+
+  #[Covers('\Verseles\SevenZip\SevenZip::extract')]
+  #[DataProvider('compressAndExtractDataProvider')]
+  #[Depends('testVerify')]
   public function testExtract(string $format): void
   {
     $archive = $this->testDir . '/target/archive.' . $format;
@@ -332,6 +357,15 @@ class SevenZipTest extends TestCase
       ->compress();
 
     $this->assertFileExists($encryptedFile);
+
+    // Verify the encrypted file
+    $this->sevenZip
+        ->source($encryptedFile)
+        ->setPassword($password);
+
+    $output = $this->sevenZip->verify();
+    $this->assertIsString($output);
+    $this->assertStringContainsString('Everything is Ok', $output);
 
     // Decrypt and extract the file
     $this->sevenZip->decrypt($password)
