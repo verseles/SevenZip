@@ -1434,6 +1434,35 @@ class SevenZip
         return $this->runCommand($command);
     }
 
+    /**
+     * Test the integrity of an archive.
+     *
+     * @return string The output of the 7-Zip command.
+     * @throws \InvalidArgumentException If source path is not set.
+     */
+    public function verify(): string
+    {
+        if (!$this->getSourcePath()) {
+            throw new \InvalidArgumentException(
+                "Archive file path (source) must be set",
+            );
+        }
+
+        if ($this->getPassword()) {
+            $this->addFlag("p", $this->getPassword(), glued: true);
+        }
+
+        $command = [
+          $this->sevenZipPath,
+          "t",
+          ...$this->flagrize($this->getAlwaysFlags()),
+          ...$this->flagrize($this->getCustomFlags()),
+          $this->getSourcePath(),
+        ];
+
+        return $this->runCommand($command);
+    }
+
     public function getFlag(string $flag): mixed
     {
         return $this->customFlags[$flag] ?? null;
