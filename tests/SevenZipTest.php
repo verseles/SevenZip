@@ -260,6 +260,32 @@ class SevenZipTest extends TestCase
         $this->assertFileExists(filename: $archive);
     }
 
+    #[Covers('\Verseles\SevenZip\SevenZip::rename')]
+    #[DataProvider('compressAndExtractDataProvider')]
+    #[Depends('testCompress')]
+    public function testRename(string $format): void
+    {
+        $archive = $this->testDir . '/target/archive.' . $format;
+
+        // 7z doesn't support renaming in bzip2 format out of the box with `rn` command.
+        if (in_array($format, ['bzip2'])) {
+            $this->expectException(\RuntimeException::class);
+        }
+
+        $output = $this->sevenZip
+          ->source(path: $archive)
+          ->rename(['source/Avatart.svg' => 'source/Avatar_renamed.svg']);
+
+        if (!in_array($format, ['bzip2'])) {
+            $this->assertStringContainsString('Everything is Ok', $output);
+
+            // Revert back so extract test doesn't fail
+            $this->sevenZip
+              ->source(path: $archive)
+              ->rename(['source/Avatar_renamed.svg' => 'source/Avatart.svg']);
+        }
+    }
+
     #[Covers('\Verseles\SevenZip\SevenZip::verify')]
     #[DataProvider('compressAndExtractDataProvider')]
     #[Depends('testCompress')]
