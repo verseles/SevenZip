@@ -567,5 +567,44 @@ class SevenZipTest extends TestCase
 
     }
 
+    #[Covers('\Verseles\SevenZip\SevenZip::rename')]
+    public function testRename(): void
+    {
+        $format    = 'zip';
+        $directory = $this->testDir . '/source/*';
+        $archive   = $this->testDir . '/target/rename_archive.' . $format;
+
+        // Compress
+        $this->sevenZip
+          ->format($format)
+          ->faster()
+          ->source($directory)
+          ->target($archive)
+          ->compress();
+
+        $this->assertFileExists($archive);
+
+        // Rename Avatart.svg to RenamedAvatar.svg
+        $this->sevenZip
+          ->source($archive)
+          ->rename(['Avatart.svg' => 'RenamedAvatar.svg']);
+
+        $fileList = $this->sevenZip->source($archive)->fileList();
+
+        $foundOld = false;
+        $foundNew = false;
+
+        foreach ($fileList as $file) {
+            if ($file['path'] === 'Avatart.svg') {
+                $foundOld = true;
+            }
+            if ($file['path'] === 'RenamedAvatar.svg') {
+                $foundNew = true;
+            }
+        }
+
+        $this->assertFalse($foundOld, 'Old file name should not be in the archive');
+        $this->assertTrue($foundNew, 'New file name should be in the archive');
+    }
 
 }
