@@ -387,6 +387,64 @@ class SevenZipTest extends TestCase
 
     }
 
+    #[Covers('\Verseles\SevenZip\SevenZip::rename')]
+    public function testRename(): void
+    {
+        $format    = '7z';
+        $directory = $this->testDir . '/source/*';
+        $archive   = $this->testDir . '/target/rename_archive.' . $format;
+        $oldName   = 'Avatart.svg';
+        $newName   = 'NewName.svg';
+
+        $this->assertFileDoesNotExist($archive);
+
+        // Compress
+        $this->sevenZip
+          ->format($format)
+          ->faster()
+          ->source($directory)
+          ->target($archive)
+          ->compress();
+
+        $this->assertFileExists($archive);
+
+        // Rename
+        $output = $this->sevenZip
+          ->source($archive)
+          ->rename([$oldName => $newName]);
+        $this->assertStringContainsString('Everything is Ok', $output);
+
+        // Verify the rename
+        $fileList = $this->sevenZip
+          ->source($archive)
+          ->fileList();
+
+        $names = array_map(function ($file) {
+            return $file['path'];
+        }, $fileList);
+
+        $this->assertNotContains($oldName, $names);
+        $this->assertContains($newName, $names);
+
+        unlink($archive);
+    }
+
+    public function testRenameThrowsExceptionIfEmptyList(): void
+    {
+        $this->expectException(\InvalidArgumentException::class);
+        $this->expectExceptionMessage('Rename list cannot be empty');
+
+        $this->sevenZip->source('dummy.7z')->rename([]);
+    }
+
+    public function testRenameThrowsExceptionIfNoSource(): void
+    {
+        $this->expectException(\InvalidArgumentException::class);
+        $this->expectExceptionMessage('Archive file path (source) must be set');
+
+        $this->sevenZip->rename(['old' => 'new']);
+    }
+
     #[Covers('\Verseles\SevenZip\SevenZip::checkSupport')]
     #[Covers('\Verseles\SevenZip\SevenZip::getSupportedFormatExtensions')]
     public function testSupportedFormatsFunctions(): void
