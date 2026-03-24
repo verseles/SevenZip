@@ -274,6 +274,44 @@ class SevenZipTest extends TestCase
         $this->assertStringContainsString('Everything is Ok', $output);
     }
 
+    #[Covers('\Verseles\SevenZip\SevenZip::rename')]
+    #[Depends('testVerify')]
+    public function testRename(): void
+    {
+        $format = '7z';
+        $archive = $this->testDir . '/target/archive.' . $format;
+
+        $renameMap = [
+            'source/Avatart.svg' => 'source/Avatar_renamed.svg'
+        ];
+
+        $output = $this->sevenZip
+          ->source(path: $archive)
+          ->rename($renameMap);
+
+        $this->assertStringContainsString('Everything is Ok', $output);
+
+        $fileList = $this->sevenZip->source(path: $archive)->fileList();
+        $renamedFound = false;
+        $oldFound = false;
+        foreach ($fileList as $file) {
+            if ($file['path'] === 'source/Avatar_renamed.svg') {
+                $renamedFound = true;
+            }
+            if ($file['path'] === 'source/Avatart.svg') {
+                $oldFound = true;
+            }
+        }
+
+        $this->assertTrue($renamedFound, 'The file should be renamed to source/Avatar_renamed.svg');
+        $this->assertFalse($oldFound, 'The old file source/Avatart.svg should no longer exist in the archive');
+
+        // rename it back for subsequent extraction test
+        $this->sevenZip
+          ->source(path: $archive)
+          ->rename(['source/Avatar_renamed.svg' => 'source/Avatart.svg']);
+    }
+
     #[Covers('\Verseles\SevenZip\SevenZip::extract')]
     #[DataProvider('compressAndExtractDataProvider')]
     #[Depends('testVerify')]
