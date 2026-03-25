@@ -274,9 +274,32 @@ class SevenZipTest extends TestCase
         $this->assertStringContainsString('Everything is Ok', $output);
     }
 
-    #[Covers('\Verseles\SevenZip\SevenZip::extract')]
+    #[Covers('\Verseles\SevenZip\SevenZip::rename')]
     #[DataProvider('compressAndExtractDataProvider')]
     #[Depends('testVerify')]
+    public function testRename(string $format): void
+    {
+        $archive = $this->testDir . '/target/archive.' . $format;
+
+        // Skip formats that do not support renaming via 7z out of the box
+        if ($format === 'bzip2') {
+            $this->expectException(\RuntimeException::class);
+            $this->sevenZip
+                ->source(path: $archive)
+                ->rename(['source/Avatart.svg' => 'source/Avatar-renamed.svg']);
+            return;
+        }
+
+        $output = $this->sevenZip
+          ->source(path: $archive)
+          ->rename(['source/Avatart.svg' => 'source/Avatar-renamed.svg']);
+
+        $this->assertStringContainsString('Everything is Ok', $output);
+    }
+
+    #[Covers('\Verseles\SevenZip\SevenZip::extract')]
+    #[DataProvider('compressAndExtractDataProvider')]
+    #[Depends('testRename')]
     public function testExtract(string $format): void
     {
         $archive = $this->testDir . '/target/archive.' . $format;
@@ -287,10 +310,29 @@ class SevenZipTest extends TestCase
           ->source(path: $archive)
           ->target(path: $target)
           ->extract();
-        $this->assertFileExists(filename: $target . '/source/Avatart.svg');
+        if ($format !== 'bzip2') {
+            $this->assertFileExists(filename: $target . '/source/Avatar-renamed.svg');
+            $this->assertFileDoesNotExist(filename: $target . '/source/Avatart.svg');
+        } else {
+            $this->assertFileExists(filename: $target . '/source/Avatart.svg');
+        }
         $this->assertFileExists(filename: $target . '/source/js_interop_usage.md');
 
         unlink($archive);
+    }
+
+    public function testRenameThrowsExceptionWithoutSource(): void
+    {
+        $this->expectException(\InvalidArgumentException::class);
+        $this->expectExceptionMessage('Archive file path (source) must be set');
+        $this->sevenZip->rename(['old' => 'new']);
+    }
+
+    public function testRenameThrowsExceptionWithEmptyMap(): void
+    {
+        $this->expectException(\InvalidArgumentException::class);
+        $this->expectExceptionMessage('Rename map cannot be empty');
+        $this->sevenZip->source('dummy.7z')->rename([]);
     }
 
     #[Covers('\Verseles\SevenZip\SevenZip::getCustomFlags')]
