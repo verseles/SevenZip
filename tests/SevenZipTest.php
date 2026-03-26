@@ -274,9 +274,34 @@ class SevenZipTest extends TestCase
         $this->assertStringContainsString('Everything is Ok', $output);
     }
 
-    #[Covers('\Verseles\SevenZip\SevenZip::extract')]
+    #[Covers('\Verseles\SevenZip\SevenZip::rename')]
     #[DataProvider('compressAndExtractDataProvider')]
     #[Depends('testVerify')]
+    public function testRename(string $format): void
+    {
+        $archive = $this->testDir . '/target/archive.' . $format;
+
+        if ($format === 'bzip2') {
+            $this->expectException(\RuntimeException::class);
+        }
+
+        $output = $this->sevenZip
+          ->source(path: $archive)
+          ->rename(['source/Avatart.svg' => 'source/Renamed.svg']);
+
+        if ($format !== 'bzip2') {
+            $this->assertStringContainsString('Everything is Ok', $output);
+
+            // Rename back for test isolation
+            $this->sevenZip
+              ->source(path: $archive)
+              ->rename(['source/Renamed.svg' => 'source/Avatart.svg']);
+        }
+    }
+
+    #[Covers('\Verseles\SevenZip\SevenZip::extract')]
+    #[DataProvider('compressAndExtractDataProvider')]
+    #[Depends('testRename')]
     public function testExtract(string $format): void
     {
         $archive = $this->testDir . '/target/archive.' . $format;

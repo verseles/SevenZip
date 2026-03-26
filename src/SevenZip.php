@@ -1131,6 +1131,43 @@ class SevenZip
     }
 
     /**
+     * Renames files within an archive.
+     *
+     * @param array $renameMap An associative array mapping old file names to new file names.
+     * @return string The output of the 7-Zip command.
+     * @throws \InvalidArgumentException If the source path is not set.
+     */
+    public function rename(array $renameMap): string
+    {
+        if (!$this->getSourcePath()) {
+            throw new \InvalidArgumentException(
+                "Archive file path (source) must be set",
+            );
+        }
+
+        if ($this->getPassword()) {
+            $this->addFlag("p", $this->getPassword(), glued: true);
+        }
+
+        $renameArgs = [];
+        foreach ($renameMap as $oldName => $newName) {
+            $renameArgs[] = $oldName;
+            $renameArgs[] = $newName;
+        }
+
+        $command = [
+            $this->sevenZipPath,
+            "rn",
+            ...$this->flagrize($this->getAlwaysFlags()),
+            ...$this->flagrize($this->getCustomFlags()),
+            $this->getSourcePath(),
+            ...$renameArgs,
+        ];
+
+        return $this->runCommand($command);
+    }
+
+    /**
      * Format flags and values into an array of strings suitable for passing to 7-Zip commands.
      *
      * @param array $array          An associative array of flags and their corresponding values.
