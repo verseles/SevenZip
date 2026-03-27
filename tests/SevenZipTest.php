@@ -274,9 +274,28 @@ class SevenZipTest extends TestCase
         $this->assertStringContainsString('Everything is Ok', $output);
     }
 
-    #[Covers('\Verseles\SevenZip\SevenZip::extract')]
+    #[Covers('\Verseles\SevenZip\SevenZip::rename')]
     #[DataProvider('compressAndExtractDataProvider')]
     #[Depends('testVerify')]
+    public function testRename(string $format): void
+    {
+        $archive = $this->testDir . '/target/archive.' . $format;
+
+        if ($format === 'bzip2') {
+            $this->expectNotToPerformAssertions();
+            return;
+        }
+
+        $output = $this->sevenZip
+          ->source(path: $archive)
+          ->rename(['source/Avatart.svg' => 'source/Avatar-renamed.svg']);
+
+        $this->assertStringContainsString('Everything is Ok', $output);
+    }
+
+    #[Covers('\Verseles\SevenZip\SevenZip::extract')]
+    #[DataProvider('compressAndExtractDataProvider')]
+    #[Depends('testRename')]
     public function testExtract(string $format): void
     {
         $archive = $this->testDir . '/target/archive.' . $format;
@@ -287,7 +306,12 @@ class SevenZipTest extends TestCase
           ->source(path: $archive)
           ->target(path: $target)
           ->extract();
-        $this->assertFileExists(filename: $target . '/source/Avatart.svg');
+
+        if ($format === 'bzip2') {
+            $this->assertFileExists(filename: $target . '/source/Avatart.svg');
+        } else {
+            $this->assertFileExists(filename: $target . '/source/Avatar-renamed.svg');
+        }
         $this->assertFileExists(filename: $target . '/source/js_interop_usage.md');
 
         unlink($archive);

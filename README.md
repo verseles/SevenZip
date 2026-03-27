@@ -643,6 +643,27 @@ Removes a compression flag.
 
 **Returns**: The current instance of the SevenZip class.
 
+### `rename(array $renameMap): string`
+
+Renames files within the archive.
+
+**Parameters**
+
+- `$renameMap`: An associative array where keys are the old names and values are the new names.
+
+**Returns**: The output of the 7-Zip command.
+
+**Throws**
+
+- `InvalidArgumentException`: If the source path is not set.
+
+**Example**
+
+```php
+$sevenZip->source('/path/to/archive.7z')
+         ->rename(['old_name.txt' => 'new_name.txt']);
+```
+
 ### `reset(): SevenZip`
 
 Resets the property values to their original state.
