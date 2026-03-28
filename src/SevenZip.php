@@ -1087,6 +1087,50 @@ class SevenZip
     }
 
     /**
+     * Rename files inside an archive.
+     *
+     * @param array<string, string> $renames An associative array mapping old file names to new file names.
+     *
+     * @return string The output of the 7-Zip command.
+     * @throws \InvalidArgumentException If source path is not set or if renames array is empty.
+     */
+    public function rename(array $renames): string
+    {
+        if (!$this->getSourcePath()) {
+            throw new \InvalidArgumentException(
+                "Archive file path (source) must be set",
+            );
+        }
+
+        if (empty($renames)) {
+            throw new \InvalidArgumentException(
+                "Renames array cannot be empty",
+            );
+        }
+
+        if ($this->getPassword()) {
+            $this->addFlag("p", $this->getPassword(), glued: true);
+        }
+
+        $renameArgs = [];
+        foreach ($renames as $oldName => $newName) {
+            $renameArgs[] = $oldName;
+            $renameArgs[] = $newName;
+        }
+
+        $command = [
+          $this->sevenZipPath,
+          "rn",
+          ...$this->flagrize($this->getAlwaysFlags()),
+          ...$this->flagrize($this->getCustomFlags()),
+          $this->getSourcePath(),
+          ...$renameArgs,
+        ];
+
+        return $this->runCommand($command);
+    }
+
+    /**
      * Test the integrity of an archive.
      *
      * @return bool True if the archive is valid and not corrupted, false otherwise.
