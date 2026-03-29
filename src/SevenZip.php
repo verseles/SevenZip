@@ -315,7 +315,7 @@ class SevenZip
      */
     public function addFlag(
         string $flag,
-        string $value = null,
+        ?string $value = null,
         bool   $glued = false,
     ): self {
         if ($glued && $value !== null) {
@@ -1458,6 +1458,50 @@ class SevenZip
           ...$this->flagrize($this->getAlwaysFlags()),
           ...$this->flagrize($this->getCustomFlags()),
           $this->getSourcePath(),
+        ];
+
+        return $this->runCommand($command);
+    }
+
+    /**
+     * Renames files inside an archive.
+     *
+     * @param array $renames An associative array mapping old file names to new file names.
+     *
+     * @return string The output of the 7-Zip command.
+     * @throws \InvalidArgumentException If source path is not set or if renames array is empty.
+     */
+    public function rename(array $renames): string
+    {
+        if (!$this->getSourcePath()) {
+            throw new \InvalidArgumentException(
+                "Archive file path (source) must be set",
+            );
+        }
+
+        if (empty($renames)) {
+            throw new \InvalidArgumentException(
+                "Renames array cannot be empty",
+            );
+        }
+
+        if ($this->getPassword()) {
+            $this->addFlag("p", $this->getPassword(), glued: true);
+        }
+
+        $renameArgs = [];
+        foreach ($renames as $old => $new) {
+            $renameArgs[] = $old;
+            $renameArgs[] = $new;
+        }
+
+        $command = [
+          $this->sevenZipPath,
+          "rn",
+          ...$this->flagrize($this->getAlwaysFlags()),
+          ...$this->flagrize($this->getCustomFlags()),
+          $this->getSourcePath(),
+          ...$renameArgs,
         ];
 
         return $this->runCommand($command);
