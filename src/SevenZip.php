@@ -315,7 +315,7 @@ class SevenZip
      */
     public function addFlag(
         string $flag,
-        string $value = null,
+        ?string $value = null,
         bool   $glued = false,
     ): self {
         if ($glued && $value !== null) {
@@ -1084,6 +1084,57 @@ class SevenZip
         $output = $this->runCommand($command, secondary: true);
 
         return $this->parseFileInfoOutput($output);
+    }
+
+    /**
+     * Rename files in an archive.
+     *
+     * @param array $renames An associative array mapping old file names to new file names.
+     *
+     * @return string The output of the 7-Zip command.
+     * @throws \InvalidArgumentException If source path is not set or the renames array is empty.
+     * @throws \RuntimeException If the archive format is unsupported.
+     */
+    public function rename(array $renames): string
+    {
+        if (!$this->getSourcePath()) {
+            throw new \InvalidArgumentException(
+                "Archive file path (source) must be set",
+            );
+        }
+
+        if (empty($renames)) {
+            throw new \InvalidArgumentException(
+                "Renames array cannot be empty",
+            );
+        }
+
+        if (in_array($this->getFormat(), ['bzip2', 'bz2'])) {
+            throw new \RuntimeException(
+                "Rename operation is not supported for bzip2 archives",
+            );
+        }
+
+        if ($this->getPassword()) {
+            $this->addFlag("p", $this->getPassword(), glued: true);
+        }
+
+        $renameArgs = [];
+        foreach ($renames as $oldName => $newName) {
+            $renameArgs[] = $oldName;
+            $renameArgs[] = $newName;
+        }
+
+        $command = [
+          $this->sevenZipPath,
+          "rn",
+          ...$this->flagrize($this->getAlwaysFlags()),
+          ...$this->flagrize($this->getCustomFlags()),
+          $this->getSourcePath(),
+          ...$renameArgs,
+        ];
+
+        return $this->runCommand($command);
     }
 
     /**
