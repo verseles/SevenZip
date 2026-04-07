@@ -569,27 +569,84 @@ class SevenZipTest extends TestCase
 
     #[Covers('\Verseles\SevenZip\SevenZip::deleteSourceAfterCompress')]
     #[Covers('\Verseles\SevenZip\SevenZip::sdel')]
-    public function testDeleteSourceAfterCompressWithTarBefore(): void
+    #[Covers('\Verseles\SevenZip\SevenZip::deleteFileOrDirectory')]
+    public function testDeleteSourceAfterCompressWithTarBeforeAndGlob(): void
     {
-        $sourceDir = $this->testDir . '/source_delete_test';
+        $sourceDir = $this->testDir . '/source_delete_test_glob';
         if (!is_dir($sourceDir)) {
             mkdir($sourceDir);
+            mkdir($sourceDir . '/subdir');
             file_put_contents($sourceDir . '/test.txt', 'Hello World');
+            file_put_contents($sourceDir . '/subdir/test2.txt', 'Hello Subdir');
+            symlink($sourceDir . '/test.txt', $sourceDir . '/symlink.txt');
         }
 
         $this->assertDirectoryExists($sourceDir);
 
-        $archive = $this->testDir . '/target/archive_delete.tar.7z';
+        $archive = $this->testDir . '/target/archive_delete_glob.tar.7z';
 
         $this->sevenZip
           ->format('tar.7z')
           ->faster()
-          ->source($sourceDir)
+          ->source($sourceDir . '/*')
           ->target($archive)
           ->deleteSourceAfterCompress()
           ->compress();
 
         $this->assertFileExists($archive);
-        $this->assertDirectoryDoesNotExist($sourceDir);
+        // The * glob should delete the contents of the directory, but leave the root directory itself.
+        $this->assertDirectoryExists($sourceDir);
+        $this->assertFileDoesNotExist($sourceDir . '/test.txt');
+        $this->assertDirectoryDoesNotExist($sourceDir . '/subdir');
+        $this->assertFileDoesNotExist($sourceDir . '/symlink.txt');
+
+        // Cleanup
+        rmdir($sourceDir);
+        if (file_exists($archive)) {
+            unlink($archive);
+        }
+    }
+
+    #[Covers('\Verseles\SevenZip\SevenZip::deleteSourceAfterCompress')]
+    #[Covers('\Verseles\SevenZip\SevenZip::sdel')]
+    #[Covers('\Verseles\SevenZip\SevenZip::deleteFileOrDirectory')]
+    public function testDeleteSourceAfterCompressWithTarBeforeAndSymlink(): void
+    {
+        $targetDir = $this->testDir . '/source_delete_test_symlink_target';
+        $symlinkDir = $this->testDir . '/source_delete_test_symlink';
+
+        if (!is_dir($targetDir)) {
+            mkdir($targetDir);
+            file_put_contents($targetDir . '/real_file.txt', 'Real file');
+        }
+
+        if (!is_link($symlinkDir)) {
+            symlink($targetDir, $symlinkDir);
+        }
+
+        $this->assertDirectoryExists($targetDir);
+        $this->assertTrue(is_link($symlinkDir));
+
+        $archive = $this->testDir . '/target/archive_delete_symlink.tar.7z';
+
+        $this->sevenZip
+          ->format('tar.7z')
+          ->faster()
+          ->source($symlinkDir)
+          ->target($archive)
+          ->deleteSourceAfterCompress()
+          ->compress();
+
+        $this->assertFileExists($archive);
+        // The symlink should be deleted, but the target should remain untouched.
+        $this->assertFalse(is_link($symlinkDir));
+        $this->assertDirectoryExists($targetDir);
+
+        // Cleanup
+        unlink($targetDir . '/real_file.txt');
+        rmdir($targetDir);
+        if (file_exists($archive)) {
+            unlink($archive);
+        }
     }
 }

@@ -1443,30 +1443,43 @@ class SevenZip
 
         // Let's manually delete the original source if `tarBefore` happened and `sdel` was originally set.
         if ($shouldDeleteOriginalSource && $originalSourcePath && $wasTarred) {
-            if (str_ends_with($originalSourcePath, '/*')) {
-                $dirPath = substr($originalSourcePath, 0, -2);
-                if (is_dir($dirPath)) {
-                    $this->deleteFileOrDirectory($dirPath);
-                }
-            } else {
-                $this->deleteFileOrDirectory($originalSourcePath);
-            }
+            $this->deleteFileOrDirectory($originalSourcePath);
         }
 
         return $output;
     }
 
     /**
-     * Recursively delete a file or directory.
+     * Recursively delete a file, directory, or pattern (glob).
+     * Handles symlinks safely by not following them.
      *
      * @param string $path
      * @return void
      */
     protected function deleteFileOrDirectory(string $path): void
     {
+        // Handle glob patterns (e.g., /path/to/*)
+        if (strpbrk($path, '*?[]') !== false) {
+            $matchedFiles = glob($path);
+            if (is_array($matchedFiles)) {
+                foreach ($matchedFiles as $file) {
+                    $this->deleteFileOrDirectory($file);
+                }
+            }
+            return;
+        }
+
+        if (is_link($path)) {
+            unlink($path);
+            return;
+        }
+
         if (is_file($path)) {
             unlink($path);
-        } elseif (is_dir($path)) {
+            return;
+        }
+
+        if (is_dir($path)) {
             $files = array_diff(scandir($path), ['.', '..']);
             foreach ($files as $file) {
                 $this->deleteFileOrDirectory($path . DIRECTORY_SEPARATOR . $file);
