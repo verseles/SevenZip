@@ -643,6 +643,28 @@ Removes a compression flag.
 
 **Returns**: The current instance of the SevenZip class.
 
+### `rename(array $renames): string`
+
+Renames files within an archive. Note that the rename operation is not natively supported for `bzip2` archives.
+
+**Parameters**
+
+- `$renames`: An associative array mapping old file names to new file names.
+
+**Returns**: The output of the 7-Zip command.
+
+**Throws**
+
+- `InvalidArgumentException`: If the archive path is not set or the renames array is empty.
+- `RuntimeException`: If the format is not supported (e.g., `bzip2`).
+
+**Example**
+
+```php
+$sevenZip->source('/path/to/archive.7z')
+         ->rename(['old_name.txt' => 'new_name.txt']);
+```
+
 ### `reset(): SevenZip`
 
 Resets the property values to their original state.

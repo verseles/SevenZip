@@ -274,9 +274,35 @@ class SevenZipTest extends TestCase
         $this->assertStringContainsString('Everything is Ok', $output);
     }
 
-    #[Covers('\Verseles\SevenZip\SevenZip::extract')]
+    #[Covers('\Verseles\SevenZip\SevenZip::rename')]
     #[DataProvider('compressAndExtractDataProvider')]
     #[Depends('testVerify')]
+    public function testRename(string $format): void
+    {
+        $archive = $this->testDir . '/target/archive.' . $format;
+
+        if (in_array($format, ['bzip2', 'bz2'])) {
+            $this->expectException(\RuntimeException::class);
+            $this->expectExceptionMessage('Rename operation is not supported for bzip2 archives');
+        }
+
+        $renames = [
+          'source/Avatart.svg' => 'source/RenamedAvatar.svg'
+        ];
+
+        // Do not set format explicitly so that we rely on source file extension for unsupported tests
+        $output = $this->sevenZip
+          ->source(path: $archive)
+          ->rename($renames);
+
+        if (!in_array($format, ['bzip2', 'bz2'])) {
+            $this->assertStringContainsString('Everything is Ok', $output);
+        }
+    }
+
+    #[Covers('\Verseles\SevenZip\SevenZip::extract')]
+    #[DataProvider('compressAndExtractDataProvider')]
+    #[Depends('testRename')]
     public function testExtract(string $format): void
     {
         $archive = $this->testDir . '/target/archive.' . $format;
@@ -287,7 +313,11 @@ class SevenZipTest extends TestCase
           ->source(path: $archive)
           ->target(path: $target)
           ->extract();
-        $this->assertFileExists(filename: $target . '/source/Avatart.svg');
+        if (in_array($format, ['bzip2', 'bz2'])) {
+            $this->assertFileExists(filename: $target . '/source/Avatart.svg');
+        } else {
+            $this->assertFileExists(filename: $target . '/source/RenamedAvatar.svg');
+        }
         $this->assertFileExists(filename: $target . '/source/js_interop_usage.md');
 
         unlink($archive);
