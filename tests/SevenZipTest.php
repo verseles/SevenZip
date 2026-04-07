@@ -567,5 +567,29 @@ class SevenZipTest extends TestCase
 
     }
 
+    #[Covers('\Verseles\SevenZip\SevenZip::deleteSourceAfterCompress')]
+    #[Covers('\Verseles\SevenZip\SevenZip::sdel')]
+    public function testDeleteSourceAfterCompressWithTarBefore(): void
+    {
+        $sourceDir = $this->testDir . '/source_delete_test';
+        if (!is_dir($sourceDir)) {
+            mkdir($sourceDir);
+            file_put_contents($sourceDir . '/test.txt', 'Hello World');
+        }
 
+        $this->assertDirectoryExists($sourceDir);
+
+        $archive = $this->testDir . '/target/archive_delete.tar.7z';
+
+        $this->sevenZip
+          ->format('tar.7z')
+          ->faster()
+          ->source($sourceDir)
+          ->target($archive)
+          ->deleteSourceAfterCompress()
+          ->compress();
+
+        $this->assertFileExists($archive);
+        $this->assertDirectoryDoesNotExist($sourceDir);
+    }
 }

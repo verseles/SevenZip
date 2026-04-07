@@ -1589,6 +1589,10 @@ class SevenZip
                 $sz->addFlag("mtc", "off")->addFlag("mta", "off")->addFlag("mtm", "off");
             }
 
+            if (array_key_exists('sdel', $this->getCustomFlags())) {
+                $sz->deleteSourceAfterCompress();
+            }
+
             $sz->compress();
 
             unset($sz);
