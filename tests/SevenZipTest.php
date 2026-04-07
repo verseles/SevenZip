@@ -290,8 +290,8 @@ class SevenZipTest extends TestCase
           'source/Avatart.svg' => 'source/RenamedAvatar.svg'
         ];
 
+        // Do not set format explicitly so that we rely on source file extension for unsupported tests
         $output = $this->sevenZip
-          ->format($format)
           ->source(path: $archive)
           ->rename($renames);
 

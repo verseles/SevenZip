@@ -1109,7 +1109,9 @@ class SevenZip
             );
         }
 
-        if (in_array($this->getFormat(), ['bzip2', 'bz2'])) {
+        $extension = strtolower(pathinfo($this->getSourcePath(), PATHINFO_EXTENSION));
+
+        if (in_array($this->getFormat(), ['bzip2', 'bz2']) || in_array($extension, ['bzip2', 'bz2'])) {
             throw new \RuntimeException(
                 "Rename operation is not supported for bzip2 archives",
             );
