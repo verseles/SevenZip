@@ -1470,9 +1470,17 @@ class SevenZip
             $this->addFlag("p", $this->getPassword(), glued: true);
         }
 
+        $originalSourcePath = $this->getSourcePath();
+        $shouldDeleteOriginalSource = array_key_exists('sdel', $this->getCustomFlags());
+
         if ($this->shouldForceTarBefore()) {
             $this->executeTarBefore();
         }
+
+        // `executeTarBefore` changes `sourcePath` to the `.tar` file and sets `wasAlreadyTarred` to true.
+        // However, `reset()` is called at the end of `runCommand` which clears `wasAlreadyTarred()`.
+        // We capture the `wasAlreadyTarred()` state *before* `runCommand`!
+        $wasTarred = $this->wasAlreadyTarred();
 
         $command = [
           $this->sevenZipPath,
@@ -1484,7 +1492,62 @@ class SevenZip
           $this->getSourcePath(),
         ];
 
-        return $this->runCommand($command);
+        $output = $this->runCommand($command);
+
+        // Let's manually delete the original source if `tarBefore` happened and `sdel` was originally set.
+        if ($shouldDeleteOriginalSource && $originalSourcePath && $wasTarred) {
+            try {
+                $this->deleteFileOrDirectory($originalSourcePath);
+            } catch (\RuntimeException $e) {
+                throw new \RuntimeException(
+                    "Archive created successfully, but failed to delete original source: " . $e->getMessage(),
+                    0,
+                    $e
+                );
+            }
+        }
+
+        return $output;
+    }
+
+    /**
+     * Recursively delete a file, directory, or pattern (glob).
+     * Handles symlinks safely by not following them.
+     * Throws \RuntimeException if deletion fails.
+     *
+     * @param string $path
+     * @return void
+     * @throws \RuntimeException
+     */
+    protected function deleteFileOrDirectory(string $path): void
+    {
+        // Handle glob patterns (e.g., /path/to/*)
+        if (strpbrk($path, '*?[]') !== false) {
+            $matchedFiles = glob($path);
+            if (is_array($matchedFiles)) {
+                foreach ($matchedFiles as $file) {
+                    $this->deleteFileOrDirectory($file);
+                }
+            }
+            return;
+        }
+
+        if (is_link($path) || is_file($path)) {
+            if (!@unlink($path)) {
+                throw new \RuntimeException("Failed to delete file or symlink: $path");
+            }
+            return;
+        }
+
+        if (is_dir($path)) {
+            $files = array_diff(scandir($path), ['.', '..']);
+            foreach ($files as $file) {
+                $this->deleteFileOrDirectory($path . DIRECTORY_SEPARATOR . $file);
+            }
+            if (!@rmdir($path)) {
+                throw new \RuntimeException("Failed to delete directory: $path");
+            }
+        }
     }
 
     /**
@@ -1648,6 +1711,13 @@ class SevenZip
 
             $this->setAlreadyTarred(true);
 
+            // Do not delete the intermediate tar archive via `sdel` if we are already
+            // taking care of deleting the source manually in `compress()`.
+            // Wait, actually, we *should* delete the intermediate tar archive!
+            // `deleteSourceAfterCompress` on the main instance tells 7z to delete its source.
+            // When `wasAlreadyTarred` is true, 7z's source is the intermediate `.tar` file,
+            // so 7z will delete the `.tar` file. That's exactly what we want.
+            // The *original* source deletion is handled manually in `compress()` if `sdel` was originally set.
             $this->setSourcePath($tarPath)->deleteSourceAfterCompress();
         } catch (Exception $e) {
             if (is_file($tarPath)) {
