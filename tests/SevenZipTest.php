@@ -649,4 +649,50 @@ class SevenZipTest extends TestCase
             unlink($archive);
         }
     }
+
+    #[Covers('\Verseles\SevenZip\SevenZip::deleteSourceAfterCompress')]
+    #[Covers('\Verseles\SevenZip\SevenZip::sdel')]
+    #[Covers('\Verseles\SevenZip\SevenZip::deleteFileOrDirectory')]
+    public function testDeleteSourceAfterCompressWithTarBeforePartialFailure(): void
+    {
+        if (strtoupper(substr(PHP_OS, 0, 3)) === 'WIN') {
+            $this->markTestSkipped('Permissions test not reliable on Windows.');
+        }
+
+        $sourceDir = $this->testDir . '/source_delete_partial_fail';
+        if (!is_dir($sourceDir)) {
+            mkdir($sourceDir);
+        }
+        file_put_contents($sourceDir . '/test.txt', 'Hello World');
+
+        // Remove write permissions from the directory so unlink() fails
+        chmod($sourceDir, 0555);
+
+        $archive = $this->testDir . '/target/archive_delete_partial_fail.tar.7z';
+
+        $this->expectException(\RuntimeException::class);
+        $this->expectExceptionMessage('Archive created successfully, but failed to delete original source');
+
+        try {
+            $this->sevenZip
+              ->format('tar.7z')
+              ->faster()
+              ->source($sourceDir)
+              ->target($archive)
+              ->deleteSourceAfterCompress()
+              ->compress();
+        } finally {
+            // Restore permissions so cleanup works
+            chmod($sourceDir, 0777);
+            if (is_file($sourceDir . '/test.txt')) {
+                unlink($sourceDir . '/test.txt');
+            }
+            if (is_dir($sourceDir)) {
+                rmdir($sourceDir);
+            }
+            if (file_exists($archive)) {
+                unlink($archive);
+            }
+        }
+    }
 }

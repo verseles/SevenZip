@@ -1443,7 +1443,15 @@ class SevenZip
 
         // Let's manually delete the original source if `tarBefore` happened and `sdel` was originally set.
         if ($shouldDeleteOriginalSource && $originalSourcePath && $wasTarred) {
-            $this->deleteFileOrDirectory($originalSourcePath);
+            try {
+                $this->deleteFileOrDirectory($originalSourcePath);
+            } catch (\RuntimeException $e) {
+                throw new \RuntimeException(
+                    "Archive created successfully, but failed to delete original source: " . $e->getMessage(),
+                    0,
+                    $e
+                );
+            }
         }
 
         return $output;
@@ -1452,9 +1460,11 @@ class SevenZip
     /**
      * Recursively delete a file, directory, or pattern (glob).
      * Handles symlinks safely by not following them.
+     * Throws \RuntimeException if deletion fails.
      *
      * @param string $path
      * @return void
+     * @throws \RuntimeException
      */
     protected function deleteFileOrDirectory(string $path): void
     {
@@ -1469,13 +1479,10 @@ class SevenZip
             return;
         }
 
-        if (is_link($path)) {
-            unlink($path);
-            return;
-        }
-
-        if (is_file($path)) {
-            unlink($path);
+        if (is_link($path) || is_file($path)) {
+            if (!@unlink($path)) {
+                throw new \RuntimeException("Failed to delete file or symlink: $path");
+            }
             return;
         }
 
@@ -1484,7 +1491,9 @@ class SevenZip
             foreach ($files as $file) {
                 $this->deleteFileOrDirectory($path . DIRECTORY_SEPARATOR . $file);
             }
-            rmdir($path);
+            if (!@rmdir($path)) {
+                throw new \RuntimeException("Failed to delete directory: $path");
+            }
         }
     }
 
