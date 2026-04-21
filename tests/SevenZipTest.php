@@ -597,6 +597,48 @@ class SevenZipTest extends TestCase
 
     }
 
+    #[Covers('\Verseles\SevenZip\SevenZip::executeTarBefore')]
+    public function testNestedInstancesInheritCustomSevenZipPath(): void
+    {
+        $fake7z = $this->testDir . '/fake_7z.sh';
+        file_put_contents($fake7z, "#!/bin/bash\n" . $this->sevenZip->getSevenZipPath() . " \"\$@\"\n");
+        chmod($fake7z, 0755);
+
+        // We extend SevenZip to capture the inner instances created
+        $szClass = new class ($fake7z) extends \Verseles\SevenZip\SevenZip {
+            public static array $instancesPaths = [];
+
+            public function __construct(string|bool|null $sevenZipPath = null)
+            {
+                parent::__construct($sevenZipPath);
+                self::$instancesPaths[] = $this->getSevenZipPath();
+            }
+        };
+
+        $szClass::$instancesPaths = [];
+        $sz = new $szClass($fake7z);
+
+        $tarPath = $this->testDir . '/target/custom_path_archive.tar.7z';
+        $sz
+          ->format('tar.7z')
+          ->faster()
+          ->source($this->testDir . '/source/*')
+          ->target($tarPath)
+          ->compress();
+
+        $this->assertFileExists($tarPath);
+
+        // Ensure that any instantiated copies (including the inner tar compression) used the custom path
+        foreach ($szClass::$instancesPaths as $path) {
+            $this->assertEquals($fake7z, $path);
+        }
+
+        unlink($fake7z);
+        if (file_exists($tarPath)) {
+            unlink($tarPath);
+        }
+    }
+
     #[Covers('\Verseles\SevenZip\SevenZip::deleteSourceAfterCompress')]
     #[Covers('\Verseles\SevenZip\SevenZip::sdel')]
     #[Covers('\Verseles\SevenZip\SevenZip::deleteFileOrDirectory')]
