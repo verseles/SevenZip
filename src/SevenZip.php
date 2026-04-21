@@ -1335,7 +1335,7 @@ class SevenZip
 
         $sourceTar = str_replace('//', '/', $this->getTargetPath() . '/' . $tarFile);
 
-        $sz = new self();
+        $sz = new self($this->getSevenZipPath());
         $sz
           ->format('tar')
           ->deleteSourceAfterExtract()
@@ -1678,7 +1678,7 @@ class SevenZip
             $tarPath .= '.tar';
         }
         try {
-            $sz = new self();
+            $sz = new self($this->getSevenZipPath());
             $sz
               ->format("tar")
               ->target($tarPath)
