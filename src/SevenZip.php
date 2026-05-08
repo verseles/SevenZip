@@ -716,6 +716,7 @@ class SevenZip
         $this->alreadyTarred = false;
         $this->autoUntar = true;
         $this->deleteSourceAfterExtract = false;
+        $this->setFormatFlags();
 
         return $this;
     }

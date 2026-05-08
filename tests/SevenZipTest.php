@@ -138,6 +138,12 @@ class SevenZipTest extends TestCase
         $this->sevenZip->reset();
 
         $this->assertEmpty($this->sevenZip->getCustomFlags());
+
+        $reflection = new \ReflectionClass($this->sevenZip);
+        $method = $reflection->getMethod('getFormatFlags');
+        $formatFlags = $method->invoke($this->sevenZip);
+        $this->assertEquals(['t7z', 'm0' => 'lzma2'], $formatFlags);
+
         $this->assertNull($this->sevenZip->getProgressCallback());
         $this->assertSame(-1, $this->sevenZip->getLastProgress());
         $this->assertSame('7z', $this->sevenZip->getFormat());
