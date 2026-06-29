@@ -184,7 +184,15 @@ class SevenZip
         }
 
         if ($this->getSevenZipPath() === null) {
-            $this->setSevenZipPath($this->usePackageProvided7ZipExecutable());
+            $sevenZipPath = $this->usePackageProvided7ZipExecutable();
+
+            if ($sevenZipPath === null) {
+                $sevenZipPath = (new ExecutableFinder())->find("7z");
+            }
+
+            if ($sevenZipPath !== null) {
+                $this->setSevenZipPath($sevenZipPath);
+            }
         }
 
         if ($this->getSevenZipPath() === null) {
